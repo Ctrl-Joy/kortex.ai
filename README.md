@@ -200,9 +200,10 @@ scripts\start-vision.ps1   # http://127.0.0.1:8100   (-Camera 1 to pick another 
 
 The `manager` can change reconciliation thresholds. The `attendant` can do everything else.
 
-### Deploying online (Vercel + Render)
+### Deploying online (Vercel + Railway)
 
-The web app deploys to **Vercel** and the API to **Render** (`render.yaml` Blueprint).
+The web app deploys to **Vercel** and the API to **Railway** (`services/api/railway.json`,
+with a persistent volume). A Render Blueprint (`render.yaml`) is included as a free alternative.
 The vision service stays on the laptop. Step-by-step guide: **[docs/deploy.md](docs/deploy.md)**.
 
 ### Using a phone
