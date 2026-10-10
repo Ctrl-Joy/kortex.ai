@@ -1,0 +1,15 @@
+# KORTEX vision service — direct dependencies (exact versions tested; full tree in requirements.lock)
+# CPU-only PyTorch wheels come from the PyTorch index:
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1
+torchvision==0.29.1
+ultralytics==8.4.175
+opencv-python==5.0.0.93
+numpy==2.5.3
+fastapi==0.143.0
+uvicorn[standard]==0.54.0
+httpx==0.28.1
+pydantic-settings==2.15.0
+# dev / test
+pytest==9.1.1
+ruff==0.17.0

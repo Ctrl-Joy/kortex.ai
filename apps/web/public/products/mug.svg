@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Illustration: coffee mug">
+  <path d="M44 24h4a8 8 0 0 1 0 16h-4v-5h4a3 3 0 0 0 0-6h-4z" fill="#0f766e"/>
+  <path d="M14 20h32v26a8 8 0 0 1-8 8H22a8 8 0 0 1-8-8V20Z" fill="#14b8a6"/>
+  <rect x="14" y="20" width="32" height="5" fill="#0d9488"/>
+  <path d="M24 8c-2 3 2 5 0 8M31 8c-2 3 2 5 0 8M38 8c-2 3 2 5 0 8" stroke="#94a3b8" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+</svg>

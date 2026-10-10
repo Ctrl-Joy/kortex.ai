@@ -1,0 +1,305 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Camera, Cpu, Database, FlaskConical, Package, RotateCcw, Save, Server, ShieldAlert, SlidersHorizontal, Store, Wifi } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
+import { toast } from "sonner";
+import { useLive } from "@/app/live-context";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/form";
+import { ErrorState, KV, Skeleton, Switch } from "@/components/ui/misc";
+import { useHealth, usePolicy, useProducts, useZones } from "@/hooks/queries";
+import { api, errorMessage } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { formatDateTime, relativeTime } from "@/lib/format";
+import { cn, humanize } from "@/lib/utils";
+import type { PolicyInfo } from "@/types/api";
+
+export default function SettingsPage() {
+  return (
+    <div className="space-y-5">
+      <HealthGrid />
+      <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+        <PolicyCard />
+        <div className="space-y-5">
+          <StoreCard />
+          <CameraPermissionCard />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HealthTile({ icon, label, ok, warn, value, detail }: { icon: React.ReactNode; label: string; ok: boolean; warn?: boolean; value: string; detail?: string }) {
+  const tone = warn ? "text-warn" : ok ? "text-ok" : "text-bad";
+  return (
+    <div className="card p-4">
+      <div className="flex items-center justify-between">
+        <span className="grid size-8 place-items-center rounded-md border border-line bg-surface-2 text-muted [&_svg]:size-4">{icon}</span>
+        <span className={cn("flex items-center gap-1.5 text-xs font-semibold", tone)}>
+          <span className={cn("size-2 rounded-full", warn ? "bg-warn" : ok ? "bg-ok" : "bg-bad")} />
+          {warn ? "Degraded" : ok ? "Healthy" : "Unavailable"}
+        </span>
+      </div>
+      <p className="mt-3 text-[13px] text-muted">{label}</p>
+      <p className="text-sm font-semibold text-fg">{value}</p>
+      {detail && <p className="mt-0.5 truncate text-xs text-subtle">{detail}</p>}
+    </div>
+  );
+}
+
+function HealthGrid() {
+  const h = useHealth();
+  const { status } = useLive();
+  if (h.isError) return <ErrorState error={h.error} onRetry={() => h.refetch()} />;
+  if (!h.data)
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-32" />
+        ))}
+      </div>
+    );
+  const d = h.data;
+  const cam = d.vision.status;
+  return (
+    <section aria-label="System health" className="space-y-3">
+      {d.security.insecure_dev_secret && (
+        <p className="flex items-center gap-2 rounded-lg border border-warn/30 bg-warn/10 px-4 py-2.5 text-[13px] text-warn">
+          <ShieldAlert className="size-4" /> The API is using a development secret key. Set KORTEX_SECRET_KEY in .env before any shared deployment.
+        </p>
+      )}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <HealthTile icon={<Server />} label="API" ok={d.api.ok} value={`v${d.api.version} · ${d.api.environment}`} detail={`Server time ${formatDateTime(d.time)}`} />
+        <HealthTile icon={<Database />} label="Database" ok={d.database.ok} value={d.database.engine.toUpperCase()} detail={d.database.error ?? "Persistent local file"} />
+        <HealthTile icon={<Wifi />} label="WebSocket" ok={status === "open"} warn={status === "connecting"} value={humanize(status)} detail={`${d.websocket.clients} client(s) connected`} />
+        <HealthTile
+          icon={<Cpu />}
+          label="Vision service"
+          ok={d.vision.online}
+          value={d.vision.online ? (cam?.model_loaded ? `Model ${cam.model_name}` : "Running, model not loaded") : "Not running"}
+          detail={d.vision.last_seen_at ? `Heartbeat ${relativeTime(d.vision.last_seen_at)}` : (d.vision.message ?? "")}
+        />
+        <HealthTile
+          icon={<Camera />}
+          label="Vision camera"
+          ok={cam?.camera_status === "ONLINE" && d.vision.online}
+          warn={d.vision.online && cam?.camera_status !== "ONLINE"}
+          value={d.vision.online ? humanize(cam?.camera_status) : "Unknown"}
+          detail={cam?.message ?? (cam?.camera_index != null ? `Device index ${cam.camera_index}` : "Start services/vision to enable")}
+        />
+      </div>
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
+        <Badge tone="sim">
+          <FlaskConical /> Simulation mode available
+        </Badge>
+        {d.simulation.note}
+        {cam?.recognition_mode && <Badge tone="accent">Recognition: {cam.recognition_mode}</Badge>}
+      </div>
+    </section>
+  );
+}
+
+function PolicyCard() {
+  const q = usePolicy();
+  const auth = useAuth();
+  const qc = useQueryClient();
+  const [draft, setDraft] = useState<Record<string, string | boolean>>({});
+  const isManager = auth?.staff.role === "MANAGER";
+
+  useEffect(() => {
+    if (q.data) setDraft(Object.fromEntries(Object.entries(q.data.values).map(([k, v]) => [k, typeof v === "boolean" ? v : String(v)])));
+  }, [q.data]);
+
+  const save = useMutation({
+    mutationFn: (values: Record<string, number | boolean>) => api.put<PolicyInfo>("/api/settings/policy", { values }),
+    onSuccess: () => {
+      toast.success("Thresholds saved");
+      qc.invalidateQueries({ queryKey: ["policy"] });
+    },
+    onError: (e) => toast.error("Not saved", { description: errorMessage(e) }),
+  });
+  const reset = useMutation({
+    mutationFn: () => api.post<PolicyInfo>("/api/settings/policy/reset"),
+    onSuccess: () => {
+      toast.success("Reset to defaults");
+      qc.invalidateQueries({ queryKey: ["policy"] });
+    },
+  });
+
+  if (q.isError) return <ErrorState error={q.error} />;
+  const p = q.data;
+
+  const changed = p
+    ? Object.entries(draft).filter(([k, v]) => (typeof v === "boolean" ? v !== p.values[k] : Number(v) !== p.values[k]))
+    : [];
+
+  const submit = () => {
+    const values: Record<string, number | boolean> = {};
+    for (const [k, v] of changed) values[k] = typeof v === "boolean" ? v : Number(v);
+    save.mutate(values);
+  };
+
+  const groups: { title: string; keys: string[] }[] = [
+    { title: "Confidence thresholds", keys: ["noise_floor", "uncertain_threshold", "mismatch_threshold"] },
+    { title: "Timing windows", keys: ["scan_grace_s", "scan_lead_s", "return_window_s", "scan_debounce_ms", "duplicate_scan_window_s", "vision_dedupe_window_s"] },
+    { title: "Supporting evidence", keys: ["min_track_frames", "sensor_window_s", "sensor_noise_grams", "sensor_tolerance_ratio"] },
+    { title: "Workflow", keys: ["allow_customer_attestation_for_uncertain", "coverage_gap_requires_staff_check"] },
+  ];
+
+  return (
+    <Card>
+      <CardHeader
+        icon={<SlidersHorizontal />}
+        title="Reconciliation policy"
+        description={<span className="text-warn">Prototype settings tuned for the controlled demo — not scientifically validated.</span>}
+        actions={
+          <>
+            <Button size="sm" variant="ghost" disabled={!isManager} loading={reset.isPending} onClick={() => reset.mutate()}>
+              <RotateCcw /> Defaults
+            </Button>
+            <Button size="sm" variant="primary" disabled={!isManager || changed.length === 0} loading={save.isPending} onClick={submit}>
+              <Save /> Save{changed.length ? ` (${changed.length})` : ""}
+            </Button>
+          </>
+        }
+      />
+      <CardBody className="space-y-5">
+        {!isManager && <p className="rounded-md border border-line bg-surface-2 px-3 py-2 text-xs text-muted">Read-only: only a store manager can change thresholds.</p>}
+        {!p ? (
+          <Skeleton className="h-64" />
+        ) : (
+          groups.map((g) => (
+            <fieldset key={g.title}>
+              <legend className="label-eyebrow mb-2">{g.title}</legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {g.keys.map((k) => {
+                  const v = draft[k];
+                  const isDefault = typeof v === "boolean" ? v === p.defaults[k] : Number(v) === p.defaults[k];
+                  return (
+                    <div key={k} className="rounded-md border border-line bg-surface-2/40 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <label htmlFor={k} className="font-mono text-xs break-all text-fg">
+                          {k}
+                        </label>
+                        {!isDefault && <Badge tone="accent">custom</Badge>}
+                      </div>
+                      <p className="mt-1 text-xs leading-snug text-muted">{p.descriptions[k]}</p>
+                      <div className="mt-2">
+                        {typeof v === "boolean" ? (
+                          <Switch id={k} checked={v} disabled={!isManager} onCheckedChange={(c) => setDraft((d) => ({ ...d, [k]: c }))} />
+                        ) : (
+                          <Input
+                            id={k}
+                            type="number"
+                            step="any"
+                            min={p.bounds[k]?.[0]}
+                            max={p.bounds[k]?.[1]}
+                            value={v ?? ""}
+                            disabled={!isManager}
+                            onChange={(e) => setDraft((d) => ({ ...d, [k]: e.target.value }))}
+                            className="h-8 font-mono"
+                          />
+                        )}
+                      </div>
+                      <p className="mt-1 text-[11px] text-subtle">default {String(p.defaults[k])}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </fieldset>
+          ))
+        )}
+      </CardBody>
+    </Card>
+  );
+}
+
+function StoreCard() {
+  const zones = useZones();
+  const products = useProducts({ includeInactive: true });
+  return (
+    <Card>
+      <CardHeader icon={<Store />} title="Store, catalogue & demo sessions" />
+      <CardBody className="space-y-4">
+        <dl className="grid grid-cols-2 gap-4">
+          <KV label="Store">KORTEX Demo Store</KV>
+          <KV label="Location">Bengaluru · Koramangala</KV>
+          <KV label="Catalogue">
+            {products.data ? `${products.data.filter((p) => p.active).length} active / ${products.data.length} total` : "…"}
+          </KV>
+          <KV label="Currency">INR (integer paise)</KV>
+        </dl>
+        <div>
+          <p className="label-eyebrow mb-2">Camera zones</p>
+          {zones.data?.map((z) => (
+            <div key={z.zone_id} className="flex items-center justify-between rounded-md border border-line px-3 py-2 text-[13px]">
+              <div>
+                <p className="font-medium text-fg">{z.zone_id}</p>
+                <p className="text-xs text-subtle">{z.label}</p>
+              </div>
+              {z.session_id ? (
+                <Link to={`/sessions/${z.session_id}`} className="font-mono text-xs text-accent hover:underline">
+                  {z.session_id}
+                </Link>
+              ) : (
+                <span className="text-xs text-subtle">No session bound</span>
+              )}
+            </div>
+          ))}
+          <p className="mt-2 text-xs text-subtle">
+            The prototype attributes camera events to the session bound to a zone. Change it in Live Monitoring.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild size="sm" variant="outline">
+            <Link to="/products">
+              <Package /> Manage catalogue
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/live">
+              <FlaskConical /> Demo controls
+            </Link>
+          </Button>
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
+function CameraPermissionCard() {
+  const [state, setState] = useState<string>("unknown");
+  const secure = typeof window !== "undefined" && window.isSecureContext;
+  useEffect(() => {
+    let cancelled = false;
+    navigator.permissions
+      ?.query({ name: "camera" as PermissionName })
+      .then((s) => {
+        if (cancelled) return;
+        setState(s.state);
+        s.onchange = () => setState(s.state);
+      })
+      .catch(() => setState("unsupported"));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return (
+    <Card>
+      <CardHeader icon={<Camera />} title="This browser’s camera access" description="Used by the customer barcode scanner." />
+      <CardBody className="space-y-2 text-[13px]">
+        <div className="flex justify-between">
+          <span className="text-muted">Permission</span>
+          <Badge tone={state === "granted" ? "ok" : state === "denied" ? "bad" : "neutral"}>{humanize(state)}</Badge>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted">Secure context (HTTPS / localhost)</span>
+          <Badge tone={secure ? "ok" : "warn"}>{secure ? "Yes" : "No"}</Badge>
+        </div>
+        {!secure && <p className="text-xs text-warn">Browsers block cameras on plain HTTP LAN addresses. Use the HTTPS dev mode for phones (see README).</p>}
+      </CardBody>
+    </Card>
+  );
+}
