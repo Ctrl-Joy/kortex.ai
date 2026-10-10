@@ -29,7 +29,7 @@ import { ProductThumb } from "@/components/status/ProductThumb";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
-import { EmptyState, ErrorState, KV, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/misc";
+import { EmptyState, ErrorState, KV, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger, Tooltip } from "@/components/ui/misc";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { DiscrepancyDrawer } from "@/features/discrepancies/DiscrepancyDrawer";
 import {
@@ -119,7 +119,9 @@ export default function SessionDetailPage() {
                   <Stat label="Camera-verified" value={d.verification.visually_verified_units} tone="ok" />
                   <Stat label="Pending" value={d.verification.pending_observations} tone="accent" />
                 </div>
-                <p className="text-xs leading-relaxed text-subtle">{d.verification.note}</p>
+                <Tooltip content={d.verification.note}>
+                  <p className="cursor-help text-xs text-subtle underline decoration-dotted underline-offset-2">Unverified units aren’t suspicious</p>
+                </Tooltip>
               </CardBody>
             </Card>
             <EligibilityCard d={d} />

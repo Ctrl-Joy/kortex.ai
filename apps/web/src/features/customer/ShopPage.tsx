@@ -359,9 +359,6 @@ function ShopView({
             </ul>
           )}
         </section>
-        <p className="px-1 text-center text-[11px] text-subtle">
-          Units without a camera observation are normal — cameras don’t see everything.
-        </p>
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 backdrop-blur-md" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/form";
-import { ErrorState, KV, Skeleton, Switch } from "@/components/ui/misc";
+import { ErrorState, KV, Skeleton, Switch, Tooltip } from "@/components/ui/misc";
 import { useHealth, usePolicy, useProducts, useZones } from "@/hooks/queries";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -33,13 +33,14 @@ export default function SettingsPage() {
 
 function HealthTile({ icon, label, ok, warn, value, detail }: { icon: React.ReactNode; label: string; ok: boolean; warn?: boolean; value: string; detail?: string }) {
   const tone = warn ? "text-warn" : ok ? "text-ok" : "text-bad";
+  const word = warn ? "Off" : ok ? "Healthy" : "Unavailable";
   return (
     <div className="card p-4">
       <div className="flex items-center justify-between">
         <span className="grid size-8 place-items-center rounded-md border border-line bg-surface-2 text-muted [&_svg]:size-4">{icon}</span>
         <span className={cn("flex items-center gap-1.5 text-xs font-semibold", tone)}>
           <span className={cn("size-2 rounded-full", warn ? "bg-warn" : ok ? "bg-ok" : "bg-bad")} />
-          {warn ? "Degraded" : ok ? "Healthy" : "Unavailable"}
+          {word}
         </span>
       </div>
       <p className="mt-3 text-[13px] text-muted">{label}</p>
@@ -78,6 +79,7 @@ function HealthGrid() {
           icon={<Cpu />}
           label="Vision service"
           ok={d.vision.online}
+          warn={!d.vision.online}
           value={d.vision.online ? (cam?.model_loaded ? `Model ${cam.model_name}` : "Running, model not loaded") : "Not running"}
           detail={d.vision.last_seen_at ? `Heartbeat ${relativeTime(d.vision.last_seen_at)}` : (d.vision.message ?? "")}
         />
@@ -85,27 +87,53 @@ function HealthGrid() {
           icon={<Camera />}
           label="Vision camera"
           ok={cam?.camera_status === "ONLINE" && d.vision.online}
-          warn={d.vision.online && cam?.camera_status !== "ONLINE"}
+          warn={cam?.camera_status !== "ONLINE" || !d.vision.online}
           value={d.vision.online ? humanize(cam?.camera_status) : "Unknown"}
           detail={cam?.message ?? (cam?.camera_index != null ? `Device index ${cam.camera_index}` : "Start services/vision to enable")}
         />
       </div>
-      <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-        <Badge tone="sim">
-          <FlaskConical /> Simulation mode available
-        </Badge>
-        {d.simulation.note}
-        {cam?.recognition_mode && <Badge tone="accent">Recognition: {cam.recognition_mode}</Badge>}
-      </div>
+      <p className="flex items-center gap-2 text-xs text-muted">
+        <FlaskConical className="size-3.5 text-sim" /> Simulation is always available and every simulated event is labelled.
+      </p>
     </section>
   );
 }
+
+const POLICY_LABELS: Record<string, { label: string; unit?: string }> = {
+  noise_floor: { label: "Ignore below" },
+  uncertain_threshold: { label: "Ask to verify below" },
+  mismatch_threshold: { label: "Suggest product swap from" },
+  scan_grace_s: { label: "Wait for a scan", unit: "s" },
+  scan_lead_s: { label: "Scan may come before pickup", unit: "s" },
+  return_window_s: { label: "Return window", unit: "s" },
+  scan_debounce_ms: { label: "Ignore repeat reads within", unit: "ms" },
+  duplicate_scan_window_s: { label: "Confirm double scans within", unit: "s" },
+  vision_dedupe_window_s: { label: "Merge duplicate camera events", unit: "s" },
+  min_track_frames: { label: "Stable track after", unit: "frames" },
+  sensor_window_s: { label: "Weight reading window", unit: "s" },
+  sensor_noise_grams: { label: "Weight noise", unit: "g" },
+  sensor_tolerance_ratio: { label: "Weight tolerance", unit: "×" },
+  allow_customer_attestation_for_uncertain: { label: "Customers can self-confirm uncertain items" },
+  coverage_gap_requires_staff_check: { label: "Camera outage needs a staff check" },
+};
+
+const POLICY_GROUPS: { title: string; keys: string[]; advanced?: boolean }[] = [
+  { title: "Confidence", keys: ["noise_floor", "uncertain_threshold", "mismatch_threshold"] },
+  { title: "Timing", keys: ["scan_grace_s", "scan_lead_s", "return_window_s"] },
+  { title: "Workflow", keys: ["allow_customer_attestation_for_uncertain", "coverage_gap_requires_staff_check"] },
+  {
+    title: "Advanced",
+    advanced: true,
+    keys: ["scan_debounce_ms", "duplicate_scan_window_s", "vision_dedupe_window_s", "min_track_frames", "sensor_window_s", "sensor_noise_grams", "sensor_tolerance_ratio"],
+  },
+];
 
 function PolicyCard() {
   const q = usePolicy();
   const auth = useAuth();
   const qc = useQueryClient();
   const [draft, setDraft] = useState<Record<string, string | boolean>>({});
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const isManager = auth?.staff.role === "MANAGER";
 
   useEffect(() => {
@@ -115,7 +143,7 @@ function PolicyCard() {
   const save = useMutation({
     mutationFn: (values: Record<string, number | boolean>) => api.put<PolicyInfo>("/api/settings/policy", { values }),
     onSuccess: () => {
-      toast.success("Thresholds saved");
+      toast.success("Settings saved");
       qc.invalidateQueries({ queryKey: ["policy"] });
     },
     onError: (e) => toast.error("Not saved", { description: errorMessage(e) }),
@@ -141,75 +169,85 @@ function PolicyCard() {
     save.mutate(values);
   };
 
-  const groups: { title: string; keys: string[] }[] = [
-    { title: "Confidence thresholds", keys: ["noise_floor", "uncertain_threshold", "mismatch_threshold"] },
-    { title: "Timing windows", keys: ["scan_grace_s", "scan_lead_s", "return_window_s", "scan_debounce_ms", "duplicate_scan_window_s", "vision_dedupe_window_s"] },
-    { title: "Supporting evidence", keys: ["min_track_frames", "sensor_window_s", "sensor_noise_grams", "sensor_tolerance_ratio"] },
-    { title: "Workflow", keys: ["allow_customer_attestation_for_uncertain", "coverage_gap_requires_staff_check"] },
-  ];
-
   return (
     <Card>
       <CardHeader
         icon={<SlidersHorizontal />}
-        title="Reconciliation policy"
-        description={<span className="text-warn">Prototype settings tuned for the controlled demo — not scientifically validated.</span>}
+        title="Reconciliation settings"
+        description="Demo defaults — not scientifically validated."
         actions={
-          <>
-            <Button size="sm" variant="ghost" disabled={!isManager} loading={reset.isPending} onClick={() => reset.mutate()}>
-              <RotateCcw /> Defaults
-            </Button>
-            <Button size="sm" variant="primary" disabled={!isManager || changed.length === 0} loading={save.isPending} onClick={submit}>
-              <Save /> Save{changed.length ? ` (${changed.length})` : ""}
-            </Button>
-          </>
+          isManager && (
+            <>
+              <Button size="sm" variant="ghost" loading={reset.isPending} onClick={() => reset.mutate()}>
+                <RotateCcw /> Defaults
+              </Button>
+              <Button size="sm" variant="primary" disabled={changed.length === 0} loading={save.isPending} onClick={submit}>
+                <Save /> Save{changed.length ? ` (${changed.length})` : ""}
+              </Button>
+            </>
+          )
         }
       />
       <CardBody className="space-y-5">
-        {!isManager && <p className="rounded-md border border-line bg-surface-2 px-3 py-2 text-xs text-muted">Read-only: only a store manager can change thresholds.</p>}
+        {!isManager && <p className="text-xs text-muted">Read-only — only a store manager can change these.</p>}
         {!p ? (
           <Skeleton className="h-64" />
         ) : (
-          groups.map((g) => (
-            <fieldset key={g.title}>
-              <legend className="label-eyebrow mb-2">{g.title}</legend>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {g.keys.map((k) => {
-                  const v = draft[k];
-                  const isDefault = typeof v === "boolean" ? v === p.defaults[k] : Number(v) === p.defaults[k];
-                  return (
-                    <div key={k} className="rounded-md border border-line bg-surface-2/40 p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <label htmlFor={k} className="font-mono text-xs break-all text-fg">
-                          {k}
-                        </label>
-                        {!isDefault && <Badge tone="accent">custom</Badge>}
-                      </div>
-                      <p className="mt-1 text-xs leading-snug text-muted">{p.descriptions[k]}</p>
-                      <div className="mt-2">
+          POLICY_GROUPS.map((g) => {
+            if (g.advanced && !showAdvanced) {
+              return (
+                <button
+                  key={g.title}
+                  onClick={() => setShowAdvanced(true)}
+                  className="cursor-pointer text-[13px] font-medium text-accent hover:underline"
+                >
+                  Show advanced settings ({g.keys.length})
+                </button>
+              );
+            }
+            return (
+              <fieldset key={g.title}>
+                <legend className="label-eyebrow mb-1">{g.title}</legend>
+                <div className="divide-y divide-line/60">
+                  {g.keys.map((k) => {
+                    const v = draft[k];
+                    const meta = POLICY_LABELS[k] ?? { label: humanize(k) };
+                    const isDefault = typeof v === "boolean" ? v === p.defaults[k] : Number(v) === p.defaults[k];
+                    return (
+                      <div key={k} className="flex items-center justify-between gap-4 py-2.5">
+                        <div className="min-w-0">
+                          <Tooltip content={<span>{p.descriptions[k]}<br /><span className="font-mono text-subtle">{k}</span></span>}>
+                            <label htmlFor={k} className="cursor-help text-[13px] text-fg">
+                              {meta.label}
+                            </label>
+                          </Tooltip>
+                          {!isDefault && <span className="ml-2 text-[11px] text-accent">default {String(p.defaults[k])}</span>}
+                        </div>
                         {typeof v === "boolean" ? (
                           <Switch id={k} checked={v} disabled={!isManager} onCheckedChange={(c) => setDraft((d) => ({ ...d, [k]: c }))} />
                         ) : (
-                          <Input
-                            id={k}
-                            type="number"
-                            step="any"
-                            min={p.bounds[k]?.[0]}
-                            max={p.bounds[k]?.[1]}
-                            value={v ?? ""}
-                            disabled={!isManager}
-                            onChange={(e) => setDraft((d) => ({ ...d, [k]: e.target.value }))}
-                            className="h-8 font-mono"
-                          />
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <Input
+                              id={k}
+                              type="number"
+                              step="any"
+                              min={p.bounds[k]?.[0]}
+                              max={p.bounds[k]?.[1]}
+                              value={v ?? ""}
+                              disabled={!isManager}
+                              onChange={(e) => setDraft((d) => ({ ...d, [k]: e.target.value }))}
+                              className="h-8 w-24 text-right font-mono"
+                            />
+                            <span className="w-10 text-xs text-subtle">{meta.unit ?? ""}</span>
+                          </div>
                         )}
                       </div>
-                      <p className="mt-1 text-[11px] text-subtle">default {String(p.defaults[k])}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </fieldset>
-          ))
+                    );
+                  })}
+                </div>
+              </fieldset>
+            );
+          })
         )}
       </CardBody>
     </Card>

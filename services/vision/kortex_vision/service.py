@@ -15,7 +15,9 @@ from kortex_vision.config import RETAIL_CLASSES, VisionSettings
 from kortex_vision.detector import Detector, load_detector
 from kortex_vision.interaction import ZoneInteractionDetector
 from kortex_vision.publisher import EventPublisher, build_event
-from kortex_vision.tracker import IoUTracker, Track
+from kortex_vision.tracker import IoUTracker
+
+PREVIEW_FPS = 20
 
 log = logging.getLogger("kortex.vision")
 
@@ -43,6 +45,8 @@ class VisionService:
         self._stop = threading.Event()
         self._was_online = False
         self.events_emitted = 0
+        # Snapshot of the latest real detections, drawn on every preview frame.
+        self._overlay: list[tuple[int, str, float, tuple[float, float, float, float], bool]] = []
         self.camera.listeners.append(self._on_camera_status)
 
     # ------------------------------------------------------------ lifecycle
@@ -50,6 +54,7 @@ class VisionService:
         self.publisher.start()
         self.camera.start()
         threading.Thread(target=self._process_loop, daemon=True, name="process").start()
+        threading.Thread(target=self._preview_loop, daemon=True, name="preview").start()
         threading.Thread(target=self._heartbeat_loop, daemon=True, name="heartbeat").start()
 
     def stop(self) -> None:
@@ -103,8 +108,7 @@ class VisionService:
             t0 = time.time()
             frame, at = self.camera.latest()
             if frame is None or at == last_frame_at:
-                self._render_placeholder()
-                time.sleep(0.1)
+                time.sleep(0.05)
                 continue
             last_frame_at = at
             h, w = frame.shape[:2]
@@ -121,10 +125,28 @@ class VisionService:
                 self.events_emitted += 1
                 log.info("candidate %s: %s (track %s, conf %.2f)", ev.event_type, ev.class_label, ev.track_id, ev.model_confidence)
                 self.publisher.publish(build_event(ev.payload(), zone_id=self.s.zone_id, model_name=self.detector.name))
-            self._render(frame, active)
+            self._overlay = [
+                (t.id, t.cls, t.mean_conf, t.bbox, self.interaction.inside(t)) for t in active if not t.missed
+            ]
             dt = time.time() - t0
             self.fps = 0.8 * self.fps + 0.2 * (1.0 / max(dt, period)) if self.fps else 1.0 / max(dt, period)
             time.sleep(max(0.0, period - dt))
+
+    def _preview_loop(self) -> None:
+        """Smooth preview: newest camera frame at ~20 FPS, independent of inference speed."""
+        period = 1.0 / PREVIEW_FPS
+        last_at = 0.0
+        while not self._stop.is_set():
+            t0 = time.time()
+            frame, at = self.camera.latest()
+            if frame is None or self.camera.status != "ONLINE":
+                self._render_placeholder()
+                self._stop.wait(0.3)
+                continue
+            if at != last_at and self.interaction is not None:
+                last_at = at
+                self._render(frame, self._overlay)
+            self._stop.wait(max(0.0, period - (time.time() - t0)))
 
     # ------------------------------------------------------------ rendering
     def _publish_jpeg(self, img: np.ndarray) -> None:
@@ -141,7 +163,7 @@ class VisionService:
             cv2.putText(img, self.camera.message[:70], (24, 84), cv2.FONT_HERSHEY_SIMPLEX, 0.5, AMBER, 1, cv2.LINE_AA)
         self._publish_jpeg(img)
 
-    def _render(self, frame: np.ndarray, tracks: list[Track]) -> None:
+    def _render(self, frame: np.ndarray, tracks: list[tuple[int, str, float, tuple[float, float, float, float], bool]]) -> None:
         img = frame.copy()
         assert self.interaction is not None
         x0, y0, x1, y1 = (int(v) for v in self.interaction.zone)
@@ -151,15 +173,12 @@ class VisionService:
         cv2.rectangle(img, (x0, y0), (x1, y1), CYAN, 1)
         cv2.putText(img, f"SHELF ZONE {self.s.zone_id}", (x0 + 8, y0 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, CYAN, 1, cv2.LINE_AA)
         # Boxes come ONLY from real model detections in this frame.
-        for t in tracks:
-            if t.missed:
-                continue
-            bx1, by1, bx2, by2 = (int(v) for v in t.bbox)
-            inside = self.interaction.inside(t)
+        for tid, cls, conf, bbox, inside in tracks:
+            bx1, by1, bx2, by2 = (int(v) for v in bbox)
             color = GREEN if inside else AMBER
             cv2.rectangle(img, (bx1, by1), (bx2, by2), color, 2)
-            mapped = self.class_map.get(t.cls)
-            label = f"#{t.id} {t.cls} {t.mean_conf:.2f}" + (f" ~{mapped}" if mapped else "")
+            mapped = self.class_map.get(cls)
+            label = f"#{tid} {cls} {conf:.2f}" + (f" ~{mapped}" if mapped else "")
             (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.48, 1)
             cv2.rectangle(img, (bx1, max(0, by1 - th - 8)), (bx1 + tw + 8, by1), color, -1)
             cv2.putText(img, label, (bx1 + 4, by1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.48, (10, 10, 10), 1, cv2.LINE_AA)
@@ -167,7 +186,7 @@ class VisionService:
         cv2.rectangle(img, (0, h - 24), (img.shape[1], h), (12, 8, 6), -1)
         cv2.putText(
             img,
-            f"KORTEX VISION | {self.detector.name} | class-level | candidate events are heuristic | {self.fps:.1f} fps",
+            f"KORTEX VISION | {self.detector.name} | class-level | candidate events are heuristic | detect {self.fps:.1f} fps",
             (8, h - 8),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.42,

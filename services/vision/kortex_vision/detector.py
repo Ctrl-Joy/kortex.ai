@@ -54,7 +54,11 @@ class YoloDetector:
 
     def __init__(self, model_path: Path, *, conf: float, allowed: set[str], imgsz: int = 480):
         os.environ.setdefault("YOLO_OFFLINE", "1")
+        import torch
         from ultralytics import YOLO  # imported lazily: heavy
+
+        # Leave CPU headroom for the camera, preview encoder and the browser.
+        torch.set_num_threads(max(1, min(4, (os.cpu_count() or 4) // 2)))
 
         self.model = YOLO(str(model_path))
         self.name = model_path.stem

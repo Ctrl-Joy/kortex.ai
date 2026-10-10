@@ -159,6 +159,8 @@ def _evidence_for(db: Session, ve: VisionEvent, policy: Policy) -> Evidence:
     sensors = db.scalars(
         select(SensorEvent).where(
             SensorEvent.zone_id == ve.zone_id,
+            # Readings attributed to another shopping session are never evidence for this one.
+            or_(SensorEvent.session_id == ve.session_id, SensorEvent.session_id.is_(None)),
             SensorEvent.occurred_at >= ve.occurred_at - window,
             SensorEvent.occurred_at <= ve.occurred_at + window,
         )
