@@ -81,6 +81,16 @@ function CameraPanel() {
   const camLive = online && v?.status?.camera_status === "ONLINE";
   const [streamError, setStreamError] = useState(false);
   const [nonce, setNonce] = useState(0);
+  const paused = online && v?.status?.camera_status === "PAUSED";
+  const qc = useQueryClient();
+  const toggle = useMutation({
+    mutationFn: (action: "pause" | "resume") => api.post(`/vision/camera/${action}`, undefined, "none"),
+    onSuccess: (_r, action) => {
+      toast.success(action === "pause" ? "Webcam released — the browser scanner can use it now" : "Webcam resumed for shelf monitoring");
+      setTimeout(() => qc.invalidateQueries({ queryKey: ["vision-status"] }), 800);
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
 
   useEffect(() => {
     if (camLive) setStreamError(false);
@@ -97,15 +107,27 @@ function CameraPanel() {
             : "The vision service runs separately on this laptop (services/vision)."
         }
         actions={
-          camLive ? (
-            <Badge tone="accent" size="md">
-              <CircleDot className="animate-pulse" /> LIVE CAMERA
-            </Badge>
-          ) : (
-            <Badge tone="neutral" size="md">
-              Camera offline
-            </Badge>
-          )
+          <>
+            {camLive && (
+              <Button size="sm" variant="ghost" loading={toggle.isPending} onClick={() => toggle.mutate("pause")}>
+                <CameraOff /> Release webcam
+              </Button>
+            )}
+            {paused && (
+              <Button size="sm" variant="secondary" loading={toggle.isPending} onClick={() => toggle.mutate("resume")}>
+                <Camera /> Resume webcam
+              </Button>
+            )}
+            {camLive ? (
+              <Badge tone="accent" size="md">
+                <CircleDot className="animate-pulse" /> LIVE CAMERA
+              </Badge>
+            ) : (
+              <Badge tone="neutral" size="md">
+                {paused ? "Webcam released" : "Camera offline"}
+              </Badge>
+            )}
+          </>
         }
       />
       <div className="relative aspect-video w-full bg-canvas">
@@ -132,7 +154,9 @@ function CameraPanel() {
                 {online ? (streamError ? "Camera stream unavailable" : `Camera ${humanize(v?.status?.camera_status)}`) : "Vision service not running"}
               </p>
               <p className="mt-1 max-w-md text-[13px] text-muted">
-                {online
+                {paused
+                  ? "The webcam is free for the customer barcode scanner on this laptop. No shelf observations are made while released, so a session in progress gets a routine coverage-gap check."
+                  : online
                   ? (v?.status?.message ?? "Check that no other application is using the webcam.")
                   : "Start it to stream real detections. Until then, use the clearly labelled simulation controls on the right."}
               </p>

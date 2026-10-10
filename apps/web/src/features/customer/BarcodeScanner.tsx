@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type ScanState = "idle" | "starting" | "scanning" | "denied" | "no-camera" | "insecure" | "error";
+type ScanState = "idle" | "starting" | "scanning" | "denied" | "no-camera" | "in-use" | "insecure" | "error";
 
 const REPEAT_SUPPRESS_MS = 2500;
 
@@ -79,6 +79,7 @@ export function BarcodeScanner({ onDetected, active }: { onDetected: (code: stri
       const name = (err as DOMException)?.name;
       if (name === "NotAllowedError" || name === "SecurityError") setState("denied");
       else if (name === "NotFoundError" || name === "OverconstrainedError") setState("no-camera");
+      else if (name === "NotReadableError" || name === "TrackStartError" || name === "AbortError") setState("in-use");
       else {
         setState("error");
         setError((err as Error)?.message ?? "Unknown camera error");
@@ -100,6 +101,10 @@ export function BarcodeScanner({ onDetected, active }: { onDetected: (code: stri
       body: "Allow camera access in your browser’s site settings, then retry. You can also type the barcode or pick from the catalogue below.",
     },
     "no-camera": { title: "No camera found", body: "This device has no available camera. Use manual entry or the catalogue below." },
+    "in-use": {
+      title: "Camera is being used by another app",
+      body: "Windows lets only one app use a webcam at a time. On the demo laptop that is usually the KORTEX vision service — release it from Live Monitoring (“Release webcam”), scan with a phone instead, or type the code below.",
+    },
     insecure: {
       title: "Camera needs a secure connection",
       body: "Browsers only allow cameras on HTTPS or localhost. Open the HTTPS address shown by the KORTEX dev server, or use manual entry.",
@@ -107,7 +112,8 @@ export function BarcodeScanner({ onDetected, active }: { onDetected: (code: stri
     error: { title: "Camera unavailable", body: error || "Another app may be using the camera." },
   };
 
-  const problem = state === "denied" || state === "no-camera" || state === "insecure" || state === "error" ? message[state] : null;
+  const problem =
+    state === "denied" || state === "no-camera" || state === "in-use" || state === "insecure" || state === "error" ? message[state] : null;
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-line bg-black" style={{ ["--scan-h" as string]: "100%" }}>
@@ -133,7 +139,7 @@ export function BarcodeScanner({ onDetected, active }: { onDetected: (code: stri
         )}
         {problem && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-surface px-6 text-center">
-            {state === "denied" || state === "insecure" ? <ShieldAlert className="size-6 text-warn" /> : <CameraOff className="size-6 text-subtle" />}
+            {state === "denied" || state === "insecure" || state === "in-use" ? <ShieldAlert className="size-6 text-warn" /> : <CameraOff className="size-6 text-subtle" />}
             <p className="text-sm font-semibold text-fg">{problem.title}</p>
             <p className="max-w-sm text-xs leading-relaxed text-muted">{problem.body}</p>
             {state !== "insecure" && (

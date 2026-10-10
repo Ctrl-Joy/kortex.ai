@@ -84,7 +84,7 @@ class VisionService:
             if self._was_online:
                 self.publisher.publish(build_event({"event_type": "CAMERA_ONLINE"}, zone_id=self.s.zone_id, model_name=self.detector.name))
             self._was_online = True
-        elif status == "OFFLINE" and self._was_online:
+        elif status in ("OFFLINE", "PAUSED") and self._was_online:
             self.publisher.publish(build_event({"event_type": "CAMERA_OFFLINE"}, zone_id=self.s.zone_id, model_name=self.detector.name))
 
     def _heartbeat_loop(self) -> None:

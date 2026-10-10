@@ -35,7 +35,7 @@ class CameraSource:
         self.url = url  # network stream (RTSP/HTTP) takes precedence over a device index
         self.width = width
         self.height = height
-        self.status = "STARTING"  # STARTING | ONLINE | OFFLINE | DISABLED
+        self.status = "STARTING"  # STARTING | ONLINE | OFFLINE | PAUSED | DISABLED
         self.message: str | None = None
         self._frame: np.ndarray | None = None
         self._frame_at = 0.0
@@ -54,6 +54,19 @@ class CameraSource:
         if self._thread:
             self._thread.join(timeout=3)
         self._set_status("DISABLED", "Camera stopped")
+
+    def pause(self) -> None:
+        """Release the device. Reported as a coverage gap: nothing is observed while paused."""
+        self._stop.set()
+        if self._thread:
+            self._thread.join(timeout=3)
+        self._thread = None
+        self._set_status("PAUSED", "Webcam released by an operator (e.g. for barcode scanning on this laptop)")
+
+    def resume(self) -> None:
+        if self._thread is None or not self._thread.is_alive():
+            self._set_status("STARTING", None)
+            self.start()
 
     def switch(self, index: int) -> None:
         self.stop()
