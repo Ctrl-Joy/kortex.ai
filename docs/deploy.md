@@ -17,7 +17,7 @@ on the demo laptop and can send its events to the hosted API.
 
 1. Sign in at https://railway.com with GitHub → **New Project → Deploy from GitHub repo** → `kortex.ai`.
 2. Open the new service → **Settings**:
-   * **Root Directory:** `services/api` (Railway then uses `services/api/railway.json`:
+   * **Root Directory:** `services/api` (Railway then uses `services/api/railway.json` and `railpack.json`:
      Python 3.12 from `.python-version`, dependencies from `requirements.txt`, seed + uvicorn,
      health check `/api/health`).
    * **Networking → Generate Domain** to get a public URL such as `https://kortex-api-production.up.railway.app`.
