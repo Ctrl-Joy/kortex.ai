@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Illustration: chocolate bar">
+  <rect x="12" y="14" width="40" height="36" rx="3" fill="#5b3415"/>
+  <g fill="#7c4a1e"><rect x="15" y="17" width="10" height="9" rx="1.5"/><rect x="27" y="17" width="10" height="9" rx="1.5"/><rect x="39" y="17" width="10" height="9" rx="1.5"/><rect x="15" y="28" width="10" height="9" rx="1.5"/><rect x="27" y="28" width="10" height="9" rx="1.5"/><rect x="39" y="28" width="10" height="9" rx="1.5"/></g>
+  <path d="M12 39h40v8a3 3 0 0 1-3 3H15a3 3 0 0 1-3-3v-8Z" fill="#ca8a04"/>
+  <rect x="18" y="42" width="28" height="4" rx="2" fill="#fef3c7"/>
+</svg>

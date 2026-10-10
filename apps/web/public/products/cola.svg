@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Illustration: cola bottle">
+  <path d="M27 6h10v6c0 3 4 5 4 11v31a4 4 0 0 1-4 4H27a4 4 0 0 1-4-4V23c0-6 4-8 4-11V6Z" fill="#b91c1c"/>
+  <path d="M27 6h10v4H27z" fill="#e5e7eb"/>
+  <rect x="23" y="30" width="18" height="12" fill="#f8fafc"/>
+  <path d="M25 36c4-3 10 3 14 0" stroke="#dc2626" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M29 14c-2 2-3 5-3 9v28" stroke="#fca5a5" stroke-width="1.5" opacity=".5" fill="none"/>
+</svg>
