@@ -200,6 +200,11 @@ scripts\start-vision.ps1   # http://127.0.0.1:8100   (-Camera 1 to pick another 
 
 The `manager` can change reconciliation thresholds. The `attendant` can do everything else.
 
+### Deploying online (Vercel + Render)
+
+The web app deploys to **Vercel** and the API to **Render** (`render.yaml` Blueprint).
+The vision service stays on the laptop. Step-by-step guide: **[docs/deploy.md](docs/deploy.md)**.
+
 ### Using a phone
 
 Browsers only allow camera access over **HTTPS** (or on `localhost`). To scan from a phone on the same Wi-Fi:

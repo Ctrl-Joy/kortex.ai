@@ -35,7 +35,7 @@ export async function request<T>(path: string, { method = "GET", body, auth = "s
 
   let res: Response;
   try {
-    res = await fetch(`${BASE}${path}`, {
+    res = await fetch(/^https?:\/\//.test(path) ? path : `${BASE}${path}`, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),

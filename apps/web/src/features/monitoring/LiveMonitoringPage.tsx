@@ -39,6 +39,11 @@ import { cn, humanize, uid } from "@/lib/utils";
 import type { DemoRun } from "@/types/api";
 
 const ZONE = "SHELF-A1";
+// The webcam preview is served by the vision service on the demo laptop. In local
+// development Vite proxies it at /vision; a hosted build (e.g. Vercel) has no
+// such proxy unless VITE_VISION_BASE_URL points at a reachable vision service.
+const VISION_BASE: string | null =
+  (import.meta.env.VITE_VISION_BASE_URL as string | undefined)?.replace(/\/$/, "") || (import.meta.env.DEV ? "/vision" : null);
 
 export default function LiveMonitoringPage() {
   const [params, setParams] = useSearchParams();
@@ -75,7 +80,7 @@ function CameraPanel({ sessionId }: { sessionId: string | null }) {
   }, [camLive]);
 
   const toggle = useMutation({
-    mutationFn: (action: "pause" | "resume") => api.post(`/vision/camera/${action}`, undefined, "none"),
+    mutationFn: (action: "pause" | "resume") => api.post(`${VISION_BASE}/camera/${action}`, undefined, "none"),
     onSuccess: (_r, action) => {
       toast.success(action === "pause" ? "Webcam released — the barcode scanner can use it now" : "Webcam resumed");
       setTimeout(() => qc.invalidateQueries({ queryKey: ["vision-status"] }), 800);
@@ -93,14 +98,14 @@ function CameraPanel({ sessionId }: { sessionId: string | null }) {
         description={`Zone ${ZONE}`}
         actions={
           <>
-            {camLive && (
+            {camLive && VISION_BASE && (
               <Tooltip content="Free the webcam so the customer barcode scanner on this laptop can use it">
                 <Button size="sm" variant="ghost" loading={toggle.isPending} onClick={() => toggle.mutate("pause")}>
                   <CameraOff /> <span className="hidden sm:inline">Release webcam</span>
                 </Button>
               </Tooltip>
             )}
-            {paused && (
+            {paused && VISION_BASE && (
               <Button size="sm" variant="secondary" loading={toggle.isPending} onClick={() => toggle.mutate("resume")}>
                 <Camera /> Resume
               </Button>
@@ -118,10 +123,18 @@ function CameraPanel({ sessionId }: { sessionId: string | null }) {
         }
       />
       <div className="relative aspect-video w-full bg-canvas">
-        {camLive && !streamError ? (
+        {camLive && !VISION_BASE ? (
+          <div className="grid-bg flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
+            <Camera className="size-6 text-accent" />
+            <p className="text-sm font-medium text-fg">Camera is live on the demo laptop</p>
+            <p className="mx-auto max-w-sm text-[13px] text-muted">
+              Its detections reach this site as LIVE CAMERA events. The video preview itself is only shown on the laptop running the vision service.
+            </p>
+          </div>
+        ) : camLive && !streamError ? (
           <img
             key={nonce}
-            src={`/vision/stream.mjpg?n=${nonce}`}
+            src={`${VISION_BASE}/stream.mjpg?n=${nonce}`}
             alt="Live shelf camera with detector overlay"
             className="h-full w-full object-contain"
             onError={() => setStreamError(true)}

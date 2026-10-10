@@ -1,0 +1,36 @@
+# Render Blueprint for the KORTEX API (https://render.com/docs/blueprint-spec).
+# Render → New → Blueprint → pick this repository. The web app is deployed on
+# Vercel separately; the vision service stays on the demo laptop.
+services:
+  - type: web
+    name: kortex-api
+    runtime: python
+    plan: free
+    rootDir: services/api
+    buildCommand: pip install -r requirements.txt
+    # Seeding is idempotent. The free plan has no persistent disk, so the SQLite
+    # database starts fresh (with seeded demo data) after each deploy/restart.
+    startCommand: python -m app.db.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: KORTEX_ENVIRONMENT
+        value: production
+      - key: KORTEX_DATABASE_URL
+        value: sqlite:///./data/kortex.db
+      - key: KORTEX_SECRET_KEY
+        generateValue: true
+      - key: KORTEX_VISION_API_KEY
+        generateValue: true
+      # Choose a strong password in the Render dashboard (asked during setup).
+      - key: KORTEX_SEED_STAFF_PASSWORD
+        sync: false
+      # Your Vercel production URL, e.g. https://kortex-ai.vercel.app
+      - key: KORTEX_CORS_ORIGINS
+        sync: false
+      # Optional: also allow Vercel preview deployments, e.g.
+      # ^https://kortex-ai(-[a-z0-9-]+)?-ctrl-joys-projects\.vercel\.app$
+      - key: KORTEX_CORS_ORIGIN_REGEX
+        sync: false
