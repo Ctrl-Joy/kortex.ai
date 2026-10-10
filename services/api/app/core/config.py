@@ -8,7 +8,10 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
+_HERE = Path(__file__).resolve()
+# services/api/app/core/config.py → repo root. When only services/api is deployed
+# (e.g. Railway root directory), fall back to the service directory itself.
+REPO_ROOT = _HERE.parents[4] if len(_HERE.parents) > 4 else _HERE.parents[2]
 
 
 class Settings(BaseSettings):
