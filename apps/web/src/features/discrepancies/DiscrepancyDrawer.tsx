@@ -43,17 +43,18 @@ export function DiscrepancyDrawer({ id, onClose }: { id: string | null; onClose:
 
 function Review({ d }: { d: DiscrepancyDetail }) {
   const isOpen = OPEN.has(d.state);
+  const [showFactors, setShowFactors] = useState(false);
   return (
     <div className="space-y-5 p-5">
       <div className="flex flex-wrap items-center gap-2">
         <StateBadge state={d.state} />
         <SourceBadge source={d.source} isSimulated={d.is_simulated} />
-        {d.blocking ? <Badge tone="bad">Blocks checkout</Badge> : <Badge tone="neutral">Advisory</Badge>}
+        {isOpen && (d.blocking ? <Badge tone="bad">Blocks checkout</Badge> : <Badge tone="neutral">Advisory</Badge>)}
       </div>
 
       <div className="rounded-lg border border-warn/20 bg-warn/5 px-4 py-3">
         <p className="flex items-center gap-2 text-[13px] font-semibold text-warn">
-          <TriangleAlert className="size-4" /> Candidate discrepancy — not a finding of wrongdoing
+          <TriangleAlert className="size-4" /> Needs verification — not a finding of wrongdoing
         </p>
         <p className="mt-1 text-[13px] leading-relaxed text-fg">{d.explanation}</p>
       </div>
@@ -89,23 +90,32 @@ function Review({ d }: { d: DiscrepancyDetail }) {
         )}
       </section>
 
-      <section className="space-y-3">
-        <h3 className="label-eyebrow">Confidence & what it means</h3>
-        <ConfidencePair model={d.model_confidence} reconciliation={d.reconciliation_confidence} />
-        <p className="text-xs leading-relaxed text-muted">{d.confidence_note}</p>
-        {d.reconciliation && <FactorList factors={d.reconciliation.factors} />}
-      </section>
+      {(d.model_confidence != null || d.reconciliation_confidence != null) && (
+        <section className="space-y-2">
+          <ConfidencePair model={d.model_confidence} reconciliation={d.reconciliation_confidence} />
+          {d.reconciliation && d.reconciliation.factors.length > 0 && (
+            <button
+              onClick={() => setShowFactors((v) => !v)}
+              className="cursor-pointer text-xs font-medium text-accent hover:underline"
+              aria-expanded={showFactors}
+            >
+              {showFactors ? "Hide" : "Why this score?"}
+            </button>
+          )}
+          {showFactors && d.reconciliation && <FactorList factors={d.reconciliation.factors} />}
+        </section>
+      )}
 
-      <section className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg border border-line bg-surface-2/50 p-3">
-          <p className="label-eyebrow">Recommended next action</p>
-          <p className="mt-1 text-[13px] text-fg">{d.recommended_action}</p>
+      <dl className="space-y-2 rounded-lg border border-line bg-surface-2/50 p-3 text-[13px]">
+        <div>
+          <dt className="label-eyebrow">Next step</dt>
+          <dd className="mt-0.5 text-fg">{d.recommended_action}</dd>
         </div>
-        <div className="rounded-lg border border-line bg-surface-2/50 p-3">
-          <p className="label-eyebrow">What the customer sees</p>
-          <p className="mt-1 text-[13px] italic text-muted">“{d.customer_message}”</p>
+        <div>
+          <dt className="label-eyebrow">Customer sees</dt>
+          <dd className="mt-0.5 italic text-muted">“{d.customer_message}”</dd>
         </div>
-      </section>
+      </dl>
 
       {isOpen ? (
         <StaffActions d={d} />

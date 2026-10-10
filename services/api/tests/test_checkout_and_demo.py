@@ -182,3 +182,23 @@ def test_simulated_events_are_labelled(client, staff_headers, shopper, products)
     assert r.status_code == 200
     ev = r.json()["event"]
     assert ev["source"] == "SIMULATED" and ev["is_simulated"] is True
+
+
+
+def test_sensor_reading_of_another_session_is_not_evidence(client, staff_headers, products):
+    """Regression: a weight reading attributed to session X must not affect session Y."""
+    from tests.conftest import Shopper
+
+    x = Shopper(client)
+    y = Shopper(client)  # creating y re-binds the zone to y
+    r = client.post(
+        "/api/demo/sensor-events",
+        json={"zone_id": "SHELF-A1", "delta_grams": 2, "session_id": x.id},
+        headers=staff_headers,
+    )
+    assert r.status_code == 200
+    y.scan(products["FRT-BANANA-6"].barcode)
+    vision_event(client, event_type="PICKUP", product_id=products["BEV-COLA-500"].id, model_confidence=0.78, track_frames=6)
+    client.post(f"/api/sessions/{y.id}/reconcile", headers=staff_headers)
+    kinds = [d["kind"] for d in y.state()["discrepancies"]]
+    assert kinds == ["WRONG_PRODUCT"]  # not CONFLICTING_EVIDENCE caused by x's reading

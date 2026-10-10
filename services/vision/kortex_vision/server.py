@@ -84,7 +84,7 @@ def create_app(service: VisionService | None = None) -> FastAPI:
                 jpg = await asyncio.to_thread(svc.latest_jpeg, 1.0)
                 if jpg:
                     yield b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: " + str(len(jpg)).encode() + b"\r\n\r\n" + jpg + b"\r\n"
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0.02)
 
         return StreamingResponse(
             frames(), media_type="multipart/x-mixed-replace; boundary=frame", headers={"Cache-Control": "no-store"}

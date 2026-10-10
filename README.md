@@ -93,7 +93,7 @@ kortex/
 ├─ services/api/             FastAPI backend
 │  ├─ app/{api/routes,core,db,models,schemas,services,websocket}
 │  │  └─ services/reconciliation.py   ← pure decision engine
-│  └─ tests/                 82 backend tests
+│  └─ tests/                 83 backend tests
 ├─ services/vision/          Webcam + YOLO + tracker + zone heuristic
 │  ├─ kortex_vision/
 │  └─ tests/                 13 vision tests
@@ -220,7 +220,7 @@ or blocked by an insecure context, the app explains why and offers **Type code**
 ### Using the webcam for shelf vision
 
 1. `scripts\start-vision.ps1` (the camera indicator in **Live Monitoring** turns to `LIVE CAMERA`).
-2. In **Live Monitoring**, choose the session that zone `SHELF-A1` monitors, or click **New demo session**.
+2. In **Live Monitoring**, pick the session to watch (camera card, *Watching*), or click **New demo session**.
 3. Place a bottle, cup, banana or book inside the highlighted **left 42 % of the frame**
    (the shelf zone). Wait about a second, then lift it out of the zone and hold it outside.
    The service emits a **candidate PICKUP**; moving it back emits a **candidate RETURN**.
@@ -252,9 +252,9 @@ shows progress, a presenter hint, and an **Open customer app** link for that ses
 | G | Checkout blocked | Unresolved missed-scan candidate → checkout attempt gets **HTTP 409** with reasons | Customer app shows actionable blockers |
 | H | Successful checkout | Mismatch confirmed, checkout authorised, itemised bill, simulated exit | Receipt + audit trail |
 
-The **Simulation controls** card in Live Monitoring injects individual labelled events
-(pickup/return with any confidence, track and uncertainty reason; weight readings; camera
-drop/reconnect; simulated scans) into the same pipeline.
+The **Simulate** card in Live Monitoring injects individual labelled events (pickup/return
+with any confidence, simulated scans; under *More options*: track ID, uncertainty reason,
+weight readings, camera drop/reconnect, *Decide now*) into the same pipeline.
 
 ## 8. Tests
 
@@ -266,7 +266,7 @@ Results **observed on the development machine** (Windows 11, 10 Oct 2026):
 
 | Suite | Command | Result |
 |---|---|---|
-| API (engine unit tests + API integration + all 8 scenarios) | `pytest` | **82 passed** |
+| API (engine unit tests + API integration + all 8 scenarios) | `pytest` | **83 passed** |
 | API lint | `ruff check` | clean |
 | Vision (tracker, zone heuristic, event adapter) | `pytest` | **13 passed** |
 | Web typecheck (strict) | `tsc -b` | clean |
@@ -298,6 +298,8 @@ checkout. The live webcam stream was confirmed rendering in Live Monitoring.
 | Dashboard shows "Reconnecting" | The API isn't running on :8000, or you opened the API port directly instead of :5173. |
 | Customer scanner: "Camera needs a secure connection" | Use `start-web.ps1 -Https` on phones; `localhost` works on the laptop. |
 | Camera permission denied | Re-enable it in the browser's site settings, then **Retry camera**. |
+| Scanner says "Camera is being used by another app" | Windows allows one app per webcam. The vision service is using it: **Live Monitoring → Release webcam**, then **Retry camera** (or scan with a phone). |
+| Barcode won't read on a laptop webcam | Fill the guide box with the barcode, 10–20 cm away, steady and well lit. Fixed-focus webcams struggle with tiny codes; a phone camera is more reliable. |
 | Live Monitoring: "Vision service not running" | Run `scripts\start-vision.ps1`; check `http://127.0.0.1:8100/status`. Close other apps using the webcam. |
 | Vision events are "Unassigned" | No session is bound to zone `SHELF-A1`. Pick one in Live Monitoring. |
 | "Invalid username or password" | The password is `KORTEX_SEED_STAFF_PASSWORD` from the `.env` used at **first** seed. Delete `data/kortex.db` and reseed to change it. |
