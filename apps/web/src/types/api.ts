@@ -318,7 +318,7 @@ export interface VisionStatus {
   last_seen_at: string | null;
   message: string | null;
   status: {
-    camera_status: "ONLINE" | "OFFLINE" | "STARTING" | "DISABLED";
+    camera_status: "ONLINE" | "OFFLINE" | "STARTING" | "PAUSED" | "DISABLED";
     camera_index: number | null;
     model_name: string | null;
     model_loaded: boolean;

@@ -435,7 +435,7 @@ class VisionIngestResponse(BaseModel):
 
 
 class HeartbeatIn(BaseModel):
-    camera_status: Literal["ONLINE", "OFFLINE", "STARTING", "DISABLED"]
+    camera_status: Literal["ONLINE", "OFFLINE", "STARTING", "PAUSED", "DISABLED"]
     camera_index: int | None = None
     model_name: str | None = None
     model_loaded: bool = False

@@ -57,6 +57,17 @@ def create_app(service: VisionService | None = None) -> FastAPI:
         holder["svc"].camera.switch(body.index)
         return {"ok": True, "index": body.index}
 
+    @app.post("/camera/pause")
+    def pause() -> dict:
+        """Release the webcam so another app (e.g. the browser barcode scanner) can use it."""
+        holder["svc"].camera.pause()
+        return {"ok": True, "camera_status": holder["svc"].camera.status}
+
+    @app.post("/camera/resume")
+    def resume() -> dict:
+        holder["svc"].camera.resume()
+        return {"ok": True, "camera_status": holder["svc"].camera.status}
+
     @app.get("/snapshot.jpg")
     def snapshot() -> Response:
         jpg = holder["svc"].latest_jpeg(wait=1.0)
