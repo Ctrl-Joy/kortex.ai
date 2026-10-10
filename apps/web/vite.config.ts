@@ -9,15 +9,15 @@ import { defineConfig, loadEnv } from "vite";
 // only ever talks to one origin. That keeps CORS simple and lets a phone on
 // the same Wi-Fi use the app via https://<laptop-ip>:5173 (KORTEX_HTTPS=1).
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, path.resolve(__dirname, "../.."), "");
+  const env = loadEnv(mode, path.resolve(import.meta.dirname, "../.."), "");
   const apiTarget = env.KORTEX_API_URL || "http://127.0.0.1:8000";
   const visionTarget = `http://127.0.0.1:${env.VISION_PORT || "8100"}`;
   const https = process.env.KORTEX_HTTPS === "1";
 
   return {
-    envDir: path.resolve(__dirname, "../.."),
+    envDir: path.resolve(import.meta.dirname, "../.."),
     plugins: [react(), tailwindcss(), ...(https ? [basicSsl()] : [])],
-    resolve: { alias: { "@": path.resolve(__dirname, "src") } },
+    resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
     server: {
       host: true,
       port: 5173,

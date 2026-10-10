@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     vision_api_key: str = "dev-vision-key"
     seed_staff_password: str = "kortex-dev-password"
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    # Optional regex for additional origins, e.g. Vercel preview deployments:
+    #   https://kortex-ai(-[a-z0-9-]+)?\.vercel\.app
+    cors_origin_regex: str | None = None
     token_ttl_minutes: int = 720
     # Interval of the background sweeper that finalises pending vision events.
     sweep_interval_seconds: float = 2.0
