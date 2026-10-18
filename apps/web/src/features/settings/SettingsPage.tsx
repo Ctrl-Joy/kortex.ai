@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Cpu, Database, FlaskConical, Package, RotateCcw, Save, Server, SlidersHorizontal, Store, Wifi } from "lucide-react";
+import { Camera, Cpu, Database, FlaskConical, Package, RotateCcw, Save, Server, SlidersHorizontal, Store, Wifi } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
