@@ -1,93 +1,102 @@
-# Deploying KORTEX: Vercel (web) + Railway (API)
+# Deploying KORTEX on Render
 
 ```
-Browser / phone ──HTTPS──▶ Vercel  (apps/web, static React build)
-       │
-       └──HTTPS + WSS──▶ Railway (services/api, FastAPI + SQLite on a volume)
-                              ▲
-Demo laptop: vision service ──┘  (optional; webcam stays local)
+Browser / phone ──HTTPS + WSS──▶ Render static site  (apps/web, React build)
+                                        │
+                                        └──▶ Render web service  (services/api, FastAPI + SQLite)
+                                                    ▲
+Demo laptop: vision service ────────────────────────┘  (optional; webcam stays local)
 ```
 
-Vercel serves the static web app. Vercel functions can't hold WebSockets or a
-persistent SQLite database, so the API runs on Railway as a normal long-running
-service with a persistent volume. The vision service needs a webcam, so it stays
-on the demo laptop and can send its events to the hosted API.
+Both services live on **Render** so WebSockets work end-to-end (the Live Monitoring
+page streams events in real time). The free tier sleeps after ~15 minutes of
+inactivity (first request takes 30–60 s) and has no persistent disk, so the SQLite
+database reseeds on each deploy.
 
-## 1. API on Railway (do this first)
+## 1. One-click Blueprint deploy
 
-1. Sign in at https://railway.com with GitHub → **New Project → Deploy from GitHub repo** → `kortex.ai`.
-2. Open the new service → **Settings**:
-   * **Root Directory:** `services/api` (Railway then uses `services/api/railway.json` and `railpack.json`:
-     Python 3.12 from `.python-version`, dependencies from `requirements.txt`, seed + uvicorn,
-     health check `/api/health`).
-   * **Networking → Generate Domain** to get a public URL such as `https://kortex-api-production.up.railway.app`.
-3. Right-click the service → **Attach Volume** → mount path `/data` (keeps the database across deploys).
-4. **Variables** → add:
+1. Sign in at <https://render.com> with GitHub.
+2. **New → Blueprint** → select the `kortex.ai` repo.
+3. Render reads `render.yaml` and creates two services:
 
-   | Variable | Value |
-   |---|---|
-   | `KORTEX_ENVIRONMENT` | `production` |
-   | `KORTEX_DATABASE_URL` | `sqlite:////data/kortex.db` |
-   | `KORTEX_SECRET_KEY` | a long random string (e.g. `python -c "import secrets;print(secrets.token_urlsafe(48))"`) |
-   | `KORTEX_VISION_API_KEY` | another random string |
-   | `KORTEX_SEED_STAFF_PASSWORD` | a **strong** password (the site is public) |
-   | `KORTEX_CORS_ORIGINS` | `https://placeholder.invalid` for now (step 3 sets the real one) |
+   | Service | Type | What it runs |
+   |---|---|---|
+   | **kortex-api** | Web Service (Python) | FastAPI backend at `/api/*` |
+   | **kortex-web** | Static Site | React SPA built with Vite |
 
-5. Railway redeploys. Open `https://<your-railway-domain>/api/health` and check for `"ok": true`.
+4. Set the environment variables Render prompts you for:
 
-Railway gives new accounts trial credit; after that it is a paid service (a small API
-like this costs a few dollars a month).
+   | Variable | Where | Value |
+   |---|---|---|
+   | `KORTEX_SECRET_KEY` | kortex-api | A long random string — `python -c "import secrets;print(secrets.token_urlsafe(48))"` |
+   | `KORTEX_VISION_API_KEY` | kortex-api | Another random string |
+   | `KORTEX_SEED_STAFF_PASSWORD` | kortex-api | A **strong** password (the site is public) |
+   | `KORTEX_CORS_ORIGINS` | kortex-api | `https://kortex-web.onrender.com` (or whatever URL Render gives the static site — no trailing slash!) |
 
-<details>
-<summary>Alternative: Render (free, but the database resets on every deploy)</summary>
+   `render.yaml` wires `VITE_API_BASE_URL` on the static site to point at the API
+   service automatically via `fromService`.
 
-Render → **New → Blueprint** → select the repo (uses `render.yaml`). Set
-`KORTEX_SEED_STAFF_PASSWORD` and `KORTEX_CORS_ORIGINS` when prompted; the secret keys are
-generated. The free plan sleeps after about 15 minutes idle (the first request takes 30–60 s)
-and has no persistent disk.
-</details>
+5. Click **Apply**. Both services build and deploy.
+6. Verify: open `https://<your-api-service>.onrender.com/api/health` → `"ok": true`.
+7. Open the static site URL → sign in as `manager` with the password from step 4.
 
-## 2. Web app on Vercel
+## 2. Manual setup (if not using the Blueprint)
 
-1. Sign in at https://vercel.com with GitHub → **Add New… → Project** → import `kortex.ai`.
-2. **Root Directory:** `apps/web` (click *Edit* next to it). The framework is detected as Vite;
-   `apps/web/vercel.json` sets the build and SPA routing.
-3. **Environment Variables:**
-   * `VITE_API_BASE_URL` = `https://<your-railway-domain>` (no trailing slash)
-4. **Deploy**. Note the production URL, e.g. `https://kortex-ai.vercel.app`.
+### API (web service)
 
-## 3. Connect them
+1. **New → Web Service** → connect the repo.
+2. **Root Directory:** `services/api`
+3. **Runtime:** Python 3
+4. **Build Command:** `pip install -r requirements.txt`
+5. **Start Command:** `python -m app.db.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+6. **Environment Variables:** same as the table in step 1.4 above, plus:
+   * `PYTHON_VERSION` = `3.12.8`
+   * `KORTEX_ENVIRONMENT` = `production`
+7. Add a health check path: `/api/health`
 
-On Railway → your service → **Variables**:
+### Web app (static site)
 
-* `KORTEX_CORS_ORIGINS` = your Vercel production URL, e.g. `https://kortex-ai.vercel.app`
-* optional `KORTEX_CORS_ORIGIN_REGEX` to also allow preview deployments, e.g.
-  `^https://kortex-ai-[a-z0-9-]+\.vercel\.app$`
+1. **New → Static Site** → connect the same repo.
+2. **Root Directory:** `apps/web`
+3. **Build Command:** `npm ci && npm run build`
+4. **Publish Directory:** `dist`
+5. **Environment Variables:**
+   * `VITE_API_BASE_URL` = `https://<your-api-service>.onrender.com` (no trailing slash)
+6. Add a rewrite rule: `/*` → `/index.html` (status 200) for SPA routing.
+7. Add security headers (optional but recommended):
+   * `X-Frame-Options: DENY`
+   * `X-Content-Type-Options: nosniff`
+   * `Referrer-Policy: strict-origin-when-cross-origin`
 
-Railway redeploys automatically. Open the Vercel URL: the header badge should say **Live**.
-Sign in as `manager` with the password from step 1.4.
+### Connect them
 
-Because Vercel serves HTTPS, phones can open `https://<vercel-url>/shop` and use the
-camera directly. No local HTTPS setup is needed.
+Set `KORTEX_CORS_ORIGINS` on the API service to the static site's URL (no trailing
+slash). Render redeploys automatically. Open the static site and check the header
+badge shows **Live**.
 
-## 4. Optional: send real camera events from the laptop
+## 3. Optional: send real camera events from a laptop
 
 In the laptop's `.env`:
 
 ```
-KORTEX_API_URL=https://<your-railway-domain>
-KORTEX_VISION_API_KEY=<the same value you set on Railway>
+KORTEX_API_URL=https://<your-api-service>.onrender.com
+KORTEX_VISION_API_KEY=<the same value you set on Render>
 ```
 
-Then run `scripts\start-vision.ps1`. Note that the local dashboard's dev proxy also follows
-`KORTEX_API_URL`, so switch it back to `http://127.0.0.1:8000` for fully local demos. Detections appear on the hosted site as **LIVE CAMERA**
-events. The video preview itself is only shown on the laptop's local dashboard
-(`http://localhost:5173`). The hosted Live Monitoring page says so instead of showing a
-broken image.
+Then run `scripts\start-vision.ps1`. Detections appear on the hosted dashboard as
+**LIVE CAMERA** events. The video preview itself is only shown on the laptop's local
+dashboard (`http://localhost:5173`).
 
 ## Notes and limits
 
-* Changing `VITE_API_BASE_URL` requires a Vercel **redeploy** (Vite bakes it in at build time).
-* Every push to `main` redeploys both Railway and Vercel automatically.
-* This is a prototype: there is no rate limiting, and tokens are stored in the browser.
-  Keep the demo staff password strong and don't put real customer data in it.
+* **Free tier:** the API service sleeps after ~15 min idle → first request takes
+  30–60 s to cold-start. The database reseeds automatically on each deploy (no
+  persistent disk on the free plan).
+* **WebSockets:** Render supports WebSockets on web services. The Live Monitoring
+  page receives real-time events without polling — this is why we deploy here
+  instead of a serverless platform.
+* Changing `VITE_API_BASE_URL` requires a **redeploy** of the static site (Vite
+  bakes it in at build time).
+* Every push to `main` redeploys both services automatically.
+* This is a prototype: there is no rate limiting and tokens are stored in the
+  browser. Keep the demo staff password strong.

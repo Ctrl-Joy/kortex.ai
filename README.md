@@ -7,7 +7,19 @@
 Uncertainty-aware scan-and-go verification with a self-correcting virtual cart.
 Everseen Computer Vision AI Hackathon · **Problem Statement 2 — Mobile Scan and Go: Checkout-Anywhere Loss Prevention**
 
+**Team CIA TRIAD** — Abhijeet · Sheerjoy · Himanshu
+
 </div>
+
+### 🚀 Live Demo
+
+| | URL |
+|---|---|
+| 🖥️ Retailer dashboard | **https://kortex-ai-one.vercel.app** |
+| 📱 Customer app | **https://kortex-ai-one.vercel.app/shop** |
+| 🔌 API health | https://kortex-ai.onrender.com/api/health |
+
+**Quick start for judges:** Open the dashboard → sign in as `manager` / `admin123` → click **Start Demo** → pick **Scenario A** (normal purchase) to see the full scan-verify-checkout flow in under 60 seconds. Try Scenarios B, C, and G for edge cases.
 
 > **Prototype notice.** KORTEX is a hackathon prototype for demonstration. Payment and the
 > exit gate are **simulated**. The confidence thresholds are untuned demo defaults. Nothing
@@ -200,11 +212,12 @@ scripts\start-vision.ps1   # http://127.0.0.1:8100   (-Camera 1 to pick another 
 
 The `manager` can change reconciliation thresholds. The `attendant` can do everything else.
 
-### Deploying online (Vercel + Railway)
+### Deploying online (Render)
 
-The web app deploys to **Vercel** and the API to **Railway** (`services/api/railway.json`,
-with a persistent volume). A Render Blueprint (`render.yaml`) is included as a free alternative.
-The vision service stays on the laptop. Step-by-step guide: **[docs/deploy.md](docs/deploy.md)**.
+Both the API and the web app deploy to **Render** via the included Blueprint (`render.yaml`).
+This keeps everything on one platform and — critically — preserves **WebSocket** support for
+the Live Monitoring page's real-time event stream. The vision service stays on the demo laptop.
+Step-by-step guide: **[docs/deploy.md](docs/deploy.md)**.
 
 ### Using a phone
 
