@@ -15,8 +15,8 @@ Everseen Computer Vision AI Hackathon · **Problem Statement 2 — Mobile Scan a
 
 | | URL |
 |---|---|
-| 🖥️ Retailer dashboard | **https://kortex-ai-one.vercel.app** |
-| 📱 Customer app | **https://kortex-ai-one.vercel.app/shop** |
+| 🖥️ Retailer dashboard | **https://kortex-web.onrender.com** |
+| 📱 Customer app | **https://kortex-web.onrender.com/shop** |
 | 🔌 API health | https://kortex-ai.onrender.com/api/health |
 
 **Quick start for judges:** Open the dashboard → sign in as `manager` / `admin123` → click **Start Demo** → pick **Scenario A** (normal purchase) to see the full scan-verify-checkout flow in under 60 seconds. Try Scenarios B, C, and G for edge cases.
