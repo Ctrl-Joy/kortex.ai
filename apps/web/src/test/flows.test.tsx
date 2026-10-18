@@ -56,7 +56,7 @@ describe("customer scan-and-go", () => {
         resolved = true;
         return { body: { ...wrongProduct, state: "RESOLVED" } };
       }
-      if (req.startsWith("GET /api/products")) return { body: [] };
+      if (req.startsWith("GET /api/products")) return { body: { items: [], total: 0, limit: 50, offset: 0 } };
       return undefined;
     });
 
@@ -78,7 +78,7 @@ describe("customer scan-and-go", () => {
       if (req.startsWith("POST /api/sessions"))
         return { status: 201, body: { session: customerState().session, customer_token: "new-token" } };
       if (req.startsWith("GET /api/sessions/SES-TEST/state")) return { body: customerState({ discrepancies: [], lines: [], item_count: 0, subtotal_paise: 0 }) };
-      if (req.startsWith("GET /api/products")) return { body: [] };
+      if (req.startsWith("GET /api/products")) return { body: { items: [], total: 0, limit: 50, offset: 0 } };
       return undefined;
     });
     renderWithProviders(<ShopPage />, { route: "/shop" });
@@ -108,7 +108,7 @@ describe("customer scan-and-go", () => {
             payment_mode: "SIMULATED",
           },
         };
-      if (req.startsWith("GET /api/products")) return { body: [] };
+      if (req.startsWith("GET /api/products")) return { body: { items: [], total: 0, limit: 50, offset: 0 } };
       return undefined;
     });
     renderWithProviders(<ShopPage />, { route: "/shop" });

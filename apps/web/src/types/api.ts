@@ -332,12 +332,10 @@ export interface VisionStatus {
 }
 
 export interface Health {
-  api: { ok: boolean; version: string; environment: string };
-  database: { ok: boolean; engine: string; error: string | null };
-  websocket: { ok: boolean; clients: number };
-  vision: VisionStatus;
-  simulation: { enabled: boolean; note: string };
-  security: { insecure_dev_secret: boolean };
+  api: { ok: boolean; version: string };
+  database: { ok: boolean; error: string | null };
+  websocket: { ok: boolean };
+  vision: { online: boolean };
   time: string;
 }
 

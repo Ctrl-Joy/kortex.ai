@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Camera, Cpu, Database, FlaskConical, Package, RotateCcw, Save, Server, ShieldAlert, SlidersHorizontal, Store, Wifi } from "lucide-react";
+import { Cpu, Database, FlaskConical, Package, RotateCcw, Save, Server, SlidersHorizontal, Store, Wifi } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ import { ErrorState, KV, Skeleton, Switch, Tooltip } from "@/components/ui/misc"
 import { useHealth, usePolicy, useProducts, useZones } from "@/hooks/queries";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { formatDateTime, relativeTime } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
 import { cn, humanize } from "@/lib/utils";
 import type { PolicyInfo } from "@/types/api";
 
@@ -63,33 +63,19 @@ function HealthGrid() {
       </div>
     );
   const d = h.data;
-  const cam = d.vision.status;
   return (
     <section aria-label="System health" className="space-y-3">
-      {d.security.insecure_dev_secret && (
-        <p className="flex items-center gap-2 rounded-lg border border-warn/30 bg-warn/10 px-4 py-2.5 text-[13px] text-warn">
-          <ShieldAlert className="size-4" /> The API is using a development secret key. Set KORTEX_SECRET_KEY in .env before any shared deployment.
-        </p>
-      )}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <HealthTile icon={<Server />} label="API" ok={d.api.ok} value={`v${d.api.version} · ${d.api.environment}`} detail={`Server time ${formatDateTime(d.time)}`} />
-        <HealthTile icon={<Database />} label="Database" ok={d.database.ok} value={d.database.engine.toUpperCase()} detail={d.database.error ?? "Persistent local file"} />
-        <HealthTile icon={<Wifi />} label="WebSocket" ok={status === "open"} warn={status === "connecting"} value={humanize(status)} detail={`${d.websocket.clients} client(s) connected`} />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <HealthTile icon={<Server />} label="API" ok={d.api.ok} value={`v${d.api.version}`} detail={`Server time ${formatDateTime(d.time)}`} />
+        <HealthTile icon={<Database />} label="Database" ok={d.database.ok} value="SQLite" detail={d.database.error ?? "Persistent local file"} />
+        <HealthTile icon={<Wifi />} label="WebSocket" ok={status === "open"} warn={status === "connecting"} value={humanize(status)} detail="Real-time event stream" />
         <HealthTile
           icon={<Cpu />}
           label="Vision service"
           ok={d.vision.online}
           warn={!d.vision.online}
-          value={d.vision.online ? (cam?.model_loaded ? `Model ${cam.model_name}` : "Running, model not loaded") : "Not running"}
-          detail={d.vision.last_seen_at ? `Heartbeat ${relativeTime(d.vision.last_seen_at)}` : (d.vision.message ?? "")}
-        />
-        <HealthTile
-          icon={<Camera />}
-          label="Vision camera"
-          ok={cam?.camera_status === "ONLINE" && d.vision.online}
-          warn={cam?.camera_status !== "ONLINE" || !d.vision.online}
-          value={d.vision.online ? humanize(cam?.camera_status) : "Unknown"}
-          detail={cam?.message ?? (cam?.camera_index != null ? `Device index ${cam.camera_index}` : "Start services/vision to enable")}
+          value={d.vision.online ? "Online" : "Not running"}
+          detail={d.vision.online ? "Heartbeat active" : "Start services/vision to enable"}
         />
       </div>
       <p className="flex items-center gap-2 text-xs text-muted">
