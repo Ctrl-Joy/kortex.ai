@@ -7,7 +7,7 @@
 Uncertainty-aware scan-and-go verification with a self-correcting virtual cart.
 Everseen Computer Vision AI Hackathon · **Problem Statement 2 — Mobile Scan and Go: Checkout-Anywhere Loss Prevention**
 
-**Team CIA TRIAD** — Abhijeet · Sheerjoy · Himanshu
+**Team CIA TRIAD** — Abhijeet · Shreejoy · Himanshu
 
 </div>
 
