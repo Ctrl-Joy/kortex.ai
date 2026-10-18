@@ -57,11 +57,18 @@ async def lifespan(app: FastAPI):
         task = asyncio.create_task(_sweeper(settings.sweep_interval_seconds))
     if settings.uses_insecure_defaults:
         log.warning("KORTEX is running with a development secret key. Set KORTEX_SECRET_KEY in .env.")
+    if settings.vision_simulator:
+        from vision_simulator import start as start_vision_sim
+        start_vision_sim(db_session.SessionLocal)
+        log.info("Vision simulator enabled (KORTEX_VISION_SIMULATOR=true)")
     yield
     if task:
         task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await task
+    if settings.vision_simulator:
+        from vision_simulator import stop as stop_vision_sim
+        stop_vision_sim()
 
 
 def create_app() -> FastAPI:

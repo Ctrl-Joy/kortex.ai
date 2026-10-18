@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     # Interval of the background sweeper that finalises pending vision events.
     sweep_interval_seconds: float = 2.0
     environment: str = "development"
+    # Enable the built-in vision simulator for cloud demos (no physical camera).
+    vision_simulator: bool = False
 
     @property
     def cors_origin_list(self) -> list[str]:
