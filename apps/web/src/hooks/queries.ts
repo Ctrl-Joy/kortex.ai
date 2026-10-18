@@ -33,7 +33,7 @@ export function useHealth() {
 export function useVisionStatus() {
   return useQuery({
     queryKey: ["vision-status"],
-    queryFn: () => api.get<VisionStatus>("/api/vision/status", "none"),
+    queryFn: () => api.get<VisionStatus>("/api/vision/status"),
     refetchInterval: 5_000,
   });
 }
@@ -41,7 +41,7 @@ export function useVisionStatus() {
 export function useProducts(opts: { q?: string; includeInactive?: boolean } = {}) {
   return useQuery({
     queryKey: ["products", opts],
-    queryFn: () => api.get<Product[]>(`/api/products${qs({ q: opts.q, include_inactive: opts.includeInactive })}`, "none"),
+    queryFn: () => api.get<Page<Product>>(`/api/products${qs({ q: opts.q, include_inactive: opts.includeInactive })}`, "none"),
     placeholderData: keepPreviousData,
   });
 }
@@ -159,7 +159,7 @@ export function useVisionEvents(params: { session_id?: string; limit?: number })
 }
 
 export function useZones() {
-  return useQuery({ queryKey: ["zones"], queryFn: () => api.get<Zone[]>("/api/zones", "none") });
+  return useQuery({ queryKey: ["zones"], queryFn: () => api.get<Zone[]>("/api/zones") });
 }
 
 export function usePolicy() {

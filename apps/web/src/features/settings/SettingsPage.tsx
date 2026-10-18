@@ -265,7 +265,7 @@ function StoreCard() {
           <KV label="Store">KORTEX Demo Store</KV>
           <KV label="Location">Bengaluru · Koramangala</KV>
           <KV label="Catalogue">
-            {products.data ? `${products.data.filter((p) => p.active).length} active / ${products.data.length} total` : "…"}
+            {products.data ? `${products.data.items.filter((p) => p.active).length} active / ${products.data.total} total` : "…"}
           </KV>
           <KV label="Currency">INR (integer paise)</KV>
         </dl>

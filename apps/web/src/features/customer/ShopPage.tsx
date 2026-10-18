@@ -546,7 +546,7 @@ function CataloguePicker({ onPick, loading }: { onPick: (barcode: string) => voi
       <Input value={term} onChange={(e) => setTerm(e.target.value)} placeholder="Search products" aria-label="Search products" className="h-11" />
       <p className="text-xs text-subtle">Use this if a barcode won’t scan. Selected items are recorded as catalogue selections.</p>
       <ul className="max-h-72 divide-y divide-line/60 overflow-y-auto rounded-lg border border-line">
-        {products.data?.map((p) => (
+        {products.data?.items.map((p) => (
           <li key={p.id}>
             <button className="flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-2 disabled:opacity-50" onClick={() => onPick(p.barcode)} disabled={loading}>
               <ProductThumb product={p} className="size-10" />
@@ -559,7 +559,7 @@ function CataloguePicker({ onPick, loading }: { onPick: (barcode: string) => voi
             </button>
           </li>
         ))}
-        {products.data?.length === 0 && <li className="px-3 py-6 text-center text-xs text-muted">No matching products.</li>}
+        {products.data?.items.length === 0 && <li className="px-3 py-6 text-center text-xs text-muted">No matching products.</li>}
       </ul>
     </div>
   );

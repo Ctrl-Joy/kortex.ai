@@ -309,7 +309,7 @@ function CartComparison({ d }: { d: NonNullable<ReturnType<typeof useSessionDeta
 
 function useProductNames() {
   const p = useProducts({ includeInactive: true });
-  return (id: string | null | undefined) => (id ? (p.data?.find((x) => x.id === id)?.name ?? id) : "—");
+  return (id: string | null | undefined) => (id ? (p.data?.items.find((x) => x.id === id)?.name ?? id) : "—");
 }
 
 function Loading() {

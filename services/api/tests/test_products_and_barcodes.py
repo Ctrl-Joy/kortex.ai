@@ -16,7 +16,9 @@ def test_barcode_check_digits():
 def test_seeded_catalogue_has_five_valid_products(client):
     r = client.get("/api/products")
     assert r.status_code == 200
-    items = r.json()
+    data = r.json()
+    items = data["items"]
+    assert data["total"] == 5
     assert len(items) == 5
     assert all(barcode.is_valid(p["barcode"]) for p in items)
     assert all(isinstance(p["price_paise"], int) and p["price_paise"] > 0 for p in items)
@@ -46,7 +48,7 @@ def test_product_create_update_delete(client, staff_headers):
     pid = r.json()["id"]
     r = client.patch(f"/api/products/{pid}", json={"price_paise": 2500, "active": False}, headers=staff_headers)
     assert r.status_code == 200 and r.json()["price_paise"] == 2500 and r.json()["active"] is False
-    assert all(p["id"] != pid for p in client.get("/api/products").json())  # inactive hidden from customers
+    assert all(p["id"] != pid for p in client.get("/api/products").json()["items"])  # inactive hidden from customers
     assert client.delete(f"/api/products/{pid}", headers=staff_headers).status_code == 204
 
 

@@ -262,7 +262,7 @@ function SimulationPanel({ sessionId }: { sessionId: string | null }) {
   const [weight, setWeight] = useState("-540");
 
   useEffect(() => {
-    if (!productId && products.data?.length) setProductId(products.data[0].id);
+    if (!productId && products.data?.items.length) setProductId(products.data.items[0].id);
   }, [products.data, productId]);
 
   const refresh = () => {
@@ -288,7 +288,7 @@ function SimulationPanel({ sessionId }: { sessionId: string | null }) {
   });
   const scan = useMutation({
     mutationFn: () => {
-      const p = products.data?.find((x) => x.id === productId);
+      const p = products.data?.items.find((x) => x.id === productId);
       return api.post<{ message: string }>(`/api/demo/sessions/${sessionId}/scans`, {
         barcode: p?.barcode,
         method: "CAMERA_BARCODE",
@@ -332,7 +332,7 @@ function SimulationPanel({ sessionId }: { sessionId: string | null }) {
         <div className="grid grid-cols-2 gap-3">
           <Field label="Product" htmlFor="sim-product">
             <NativeSelect id="sim-product" value={productId} onChange={(e) => setProductId(e.target.value)}>
-              {products.data?.map((p) => (
+              {products.data?.items.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
@@ -439,7 +439,7 @@ function SimulationPanel({ sessionId }: { sessionId: string | null }) {
 function useNames() {
   const p = useProducts({ includeInactive: true });
   return useMemo(() => {
-    const m = new Map(p.data?.map((x) => [x.id, x.name]) ?? []);
+    const m = new Map(p.data?.items.map((x) => [x.id, x.name]) ?? []);
     return (id: string | null | undefined) => (id ? (m.get(id) ?? id) : "—");
   }, [p.data]);
 }

@@ -47,8 +47,14 @@ def list_sessions(
 ) -> s.Page[s.SessionSummaryOut]:
     stmt = select(ShoppingSession)
     if q:
-        like = f"%{q.strip()}%"
-        stmt = stmt.where(or_(ShoppingSession.id.ilike(like), ShoppingSession.customer_label.ilike(like)))
+        escaped = q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        like = f"%{escaped}%"
+        stmt = stmt.where(
+            or_(
+                ShoppingSession.id.ilike(like, escape="\\"),
+                ShoppingSession.customer_label.ilike(like, escape="\\"),
+            )
+        )
     if status:
         stmt = stmt.where(ShoppingSession.status == status)
     if demo is not None:

@@ -288,10 +288,10 @@ def test_escalate_and_request_customer(client, staff_headers, shopper, products)
     )
 
 
-def test_heartbeat_reports_vision_status(client):
-    assert client.get("/api/vision/status").json()["online"] is False
+def test_heartbeat_reports_vision_status(client, staff_headers):
+    assert client.get("/api/vision/status", headers=staff_headers).json()["online"] is False
     r = client.post(
         "/api/vision/heartbeat", json={"camera_status": "ONLINE", "model_loaded": True}, headers=VISION_HEADERS
     )
     assert r.status_code == 200
-    assert client.get("/api/vision/status").json()["online"] is True
+    assert client.get("/api/vision/status", headers=staff_headers).json()["online"] is True

@@ -82,7 +82,7 @@ export default function ProductsPage() {
               <Skeleton key={i} className="h-14" />
             ))}
           </div>
-        ) : q.data.length === 0 ? (
+        ) : q.data.items.length === 0 ? (
           <EmptyState icon={<Package />} title="No products found" action={<Button onClick={() => setEditing("new")}>Add product</Button>} />
         ) : (
           <Table>
@@ -98,7 +98,7 @@ export default function ProductsPage() {
               </TR>
             </THead>
             <TBody>
-              {q.data.map((p) => (
+              {q.data.items.map((p) => (
                 <TR key={p.id} className={p.active ? "" : "opacity-60"}>
                   <TD>
                     <div className="flex items-center gap-3">

@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 
 from app.api import serializers as ser
 from app.api.deps import DB, Staff, staff_actor
-from app.core.errors import NotFoundError
+from app.core.errors import AuthError, NotFoundError
 from app.models import Discrepancy
 from app.models.enums import OPEN_DISCREPANCY_STATES, ActorType
 from app.schemas import api as s
@@ -65,7 +65,14 @@ def customer_resolution(
     db: DB,
     x_session_token: Annotated[str | None, Header()] = None,
 ) -> s.DiscrepancyOut:
-    """Customer responds to an alert in their own session (requires X-Session-Token)."""
+    """Customer responds to an alert in their own session (requires X-Session-Token).
+
+    NOTE: This endpoint cannot use the standard CustomerAuth dependency because
+    the path key is ``discrepancy_id``, not ``session_id``. The session is
+    resolved from the discrepancy instead.
+    """
+    if not x_session_token:
+        raise AuthError("X-Session-Token header is required")
     d = _get(db, discrepancy_id)
     session = sessions.get_session(db, d.session_id)
     sessions.verify_customer(session, x_session_token)

@@ -8,7 +8,7 @@ from app.api import serializers as ser
 from app.api.deps import DB, Staff, staff_actor
 from app.core.errors import ConflictError, NotFoundError
 from app.models import CartItem, Product, ScanEvent
-from app.schemas.api import ProductCreate, ProductOut, ProductUpdate
+from app.schemas.api import Page, ProductCreate, ProductOut, ProductUpdate
 from app.services import audit
 from app.services import barcode as barcode_rules
 
@@ -41,26 +41,36 @@ def _check_unique(db, *, sku: str | None, code: str | None, exclude_id: str | No
             )
 
 
-@router.get("", response_model=list[ProductOut])
+def _escape_like(value: str) -> str:
+    """Escape SQL LIKE wildcard characters so user input is matched literally."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+@router.get("", response_model=Page[ProductOut])
 def list_products(
     db: DB,
     q: str | None = Query(default=None, max_length=80),
     include_inactive: bool = False,
-) -> list[ProductOut]:
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+) -> Page[ProductOut]:
     stmt = select(Product).order_by(Product.name)
     if not include_inactive:
         stmt = stmt.where(Product.active.is_(True))
     if q:
-        like = f"%{q.strip()}%"
+        escaped = _escape_like(q.strip())
+        like = f"%{escaped}%"
         stmt = stmt.where(
             or_(
-                Product.name.ilike(like),
-                Product.sku.ilike(like),
-                Product.barcode.like(like),
-                Product.category.ilike(like),
+                Product.name.ilike(like, escape="\\"),
+                Product.sku.ilike(like, escape="\\"),
+                Product.barcode.like(like, escape="\\"),
+                Product.category.ilike(like, escape="\\"),
             )
         )
-    return [ser.product(p) for p in db.scalars(stmt.limit(200))]
+    total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    rows = db.scalars(stmt.limit(limit).offset(offset))
+    return Page(items=[ser.product(p) for p in rows], total=total, limit=limit, offset=offset)
 
 
 @router.get("/barcode/{code}", response_model=ProductOut)

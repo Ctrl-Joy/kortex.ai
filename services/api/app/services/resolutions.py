@@ -27,6 +27,7 @@ CUSTOMER_OPTIONS = {
     "KEEP_BOTH",
     "REMOVE_EXTRA",
     "CONFIRM_NOTHING_EXTRA",
+    "SCAN_NOW",
     "REMOVE_RETURNED",
     "KEEP_ITEM",
     "REQUEST_STAFF",
@@ -162,6 +163,19 @@ def customer_action(db: Session, session: ShoppingSession, d: Discrepancy, optio
             cart_delta=delta,
             reason="Customer removed the accidental duplicate.",
             resolution_code="CUSTOMER_CORRECTION",
+        )
+    elif option == "SCAN_NOW":
+        # Customer acknowledges the uncertain observation and will scan the item.
+        # The discrepancy stays open (awaiting staff review); when the customer
+        # actually scans, the pipeline matches the scan to the pending observation
+        # and staff can verify or dismiss.
+        discrepancies.transition(
+            db,
+            d,
+            new_state=DiscrepancyState.AWAITING_STAFF,
+            actor=actor,
+            action=T.CUSTOMER_DISPUTED,
+            reason="Customer acknowledged the observation and will scan the item.",
         )
     elif option == "CONFIRM_NOTHING_EXTRA":
         if not current_policy(db).allow_customer_attestation_for_uncertain:

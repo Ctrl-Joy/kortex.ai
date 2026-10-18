@@ -118,7 +118,7 @@ def vision_status(db) -> dict:
 
 
 @router.get("/status", response_model=dict)
-def get_status(db: DB) -> dict:
+def get_status(db: DB, _staff: Staff) -> dict:
     return vision_status(db)
 
 

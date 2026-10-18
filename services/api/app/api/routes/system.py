@@ -11,7 +11,6 @@ from sqlalchemy import func, select, text
 from app.api import serializers as ser
 from app.api.deps import DB, Manager, Staff, staff_actor
 from app.api.routes.vision import vision_status
-from app.core.config import get_settings
 from app.core.time import utcnow
 from app.models import (
     AuditEvent,
@@ -28,7 +27,6 @@ from app.services import audit, sessions, settings_store
 from app.services.discrepancies import KIND_LABELS
 from app.services.policy import POLICY_BOUNDS, POLICY_DESCRIPTIONS, Policy
 from app.services.policy_access import invalidate
-from app.websocket.hub import hub
 
 router = APIRouter(prefix="/api", tags=["system"])
 
@@ -42,18 +40,11 @@ def health(db: DB) -> dict:
     except Exception as exc:  # pragma: no cover - reported to the client
         db_ok = False
         db_error = type(exc).__name__
-    settings = get_settings()
     return {
-        "api": {"ok": True, "version": "1.0.0", "environment": settings.environment},
-        "database": {
-            "ok": db_ok,
-            "engine": "sqlite" if "sqlite" in settings.resolved_database_url else "other",
-            "error": db_error,
-        },
-        "websocket": {"ok": True, "clients": hub.client_count},
-        "vision": vision_status(db),
-        "simulation": {"enabled": True, "note": "Simulated events are always labelled SIMULATED."},
-        "security": {"insecure_dev_secret": settings.uses_insecure_defaults},
+        "api": {"ok": True, "version": "1.0.0"},
+        "database": {"ok": db_ok, "error": db_error},
+        "websocket": {"ok": True},
+        "vision": {"online": vision_status(db).get("online", False)},
         "time": utcnow().isoformat(),
     }
 
@@ -109,7 +100,7 @@ def reset_policy(db: DB, manager: Manager) -> s.PolicyOut:
 
 
 @router.get("/zones", response_model=list[s.ZoneOut])
-def list_zones(db: DB) -> list[s.ZoneOut]:
+def list_zones(db: DB, _staff: Staff) -> list[s.ZoneOut]:
     return [s.ZoneOut.model_validate(z) for z in db.scalars(select(ZoneBinding).order_by(ZoneBinding.zone_id))]
 
 
