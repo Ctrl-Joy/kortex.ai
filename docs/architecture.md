@@ -19,7 +19,7 @@ flowchart LR
     Hub["WebSocket hub<br/>(transactional outbox)"]
   end
 
-  Staff["Retailer dashboard<br/>React · TanStack Query · Recharts"]
+  Staff["Retailer dashboard<br/>React · TanStack Query"]
   Sim["Demo simulator<br/>scenarios A–H (SIMULATED)"]
 
   Cam --> Vision

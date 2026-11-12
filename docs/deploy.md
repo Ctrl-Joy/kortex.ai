@@ -87,6 +87,21 @@ Then run `scripts\start-vision.ps1`. Detections appear on the hosted dashboard a
 **LIVE CAMERA** events. The video preview itself is only shown on the laptop's local
 dashboard (`http://localhost:5173`).
 
+## Using a different static host (e.g. Vercel)
+
+The web app is a plain static build, so it also runs on Vercel (`apps/web/vercel.json`):
+set **Root Directory** to `apps/web` and `VITE_API_BASE_URL` to the API's URL, then add that
+site's origin to `KORTEX_CORS_ORIGINS` on the API (comma-separated, no trailing slash).
+
+## What visitors see when something is missing
+
+| Situation | What the app does |
+|---|---|
+| API asleep (free tier cold start) | Sign-in and the shop show "Waking the demo server" and retry by themselves for about 40 s. |
+| API down or CORS origin not allowed | "Server unreachable" with a **Try again** button. |
+| Site built without `VITE_API_BASE_URL` | "No server connected", naming the variable to set. |
+| No camera on the server | Live shows "No camera on this server"; the customer app offers the simulated shelf when `KORTEX_VISION_SIMULATOR=true`. |
+
 ## Notes and limits
 
 * **Free tier:** the API service sleeps after ~15 min idle → first request takes
@@ -98,5 +113,7 @@ dashboard (`http://localhost:5173`).
 * Changing `VITE_API_BASE_URL` requires a **redeploy** of the static site (Vite
   bakes it in at build time).
 * Every push to `main` redeploys both services automatically.
+* `KORTEX_VISION_SIMULATOR=true` (set by the Blueprint) enables the simulated shelf in the
+  customer app. It does not fake a camera: health and the dashboard still say there is none.
 * This is a prototype: there is no rate limiting and tokens are stored in the
   browser. Keep the demo staff password strong.

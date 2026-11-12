@@ -19,7 +19,7 @@ Everseen Computer Vision AI Hackathon · **Problem Statement 2 — Mobile Scan a
 | 📱 Customer app | **https://kortex-web.onrender.com/shop** |
 | 🔌 API health | https://kortex-ai.onrender.com/api/health |
 
-**Quick start for judges:** Open the dashboard → sign in as `manager` / `admin123` → click **Start Demo** → pick **Scenario A** (normal purchase) to see the full scan-verify-checkout flow in under 60 seconds. Try Scenarios B, C, and G for edge cases.
+**Quick start for judges:** Open the dashboard → sign in as `manager` / `admin123` → click **Run demo** → pick **Scenario A** (normal purchase) to see the full scan-verify-checkout flow in under 60 seconds. Try Scenarios B, C, and G for edge cases.
 
 > **Prototype notice.** KORTEX is a hackathon prototype for demonstration. Payment and the
 > exit gate are **simulated**. The confidence thresholds are untuned demo defaults. Nothing
@@ -91,7 +91,7 @@ post-commit WebSocket notification.
 
 | Layer | Technology (versions installed and tested) |
 |---|---|
-| Web | React 19.3, TypeScript 6 (strict), Vite 8, Tailwind CSS 4, shadcn-style components on Radix UI, Lucide icons, Recharts 3, React Router 8, TanStack Query 5, Zod 4, Sonner, ZXing (`@zxing/browser`) |
+| Web | React 19.3, TypeScript 6 (strict), Vite 8, Tailwind CSS 4, shadcn-style components on Radix UI, Lucide icons, React Router 8, TanStack Query 5, Zod 4, Sonner, ZXing (`@zxing/browser`) |
 | API | Python 3.11/3.12, FastAPI 0.143, Pydantic 2.14, SQLAlchemy 2.1, SQLite (WAL), WebSockets, Pytest 9 + HTTPX, Ruff |
 | Vision | Python 3.12, OpenCV 5.0, Ultralytics 8.4 (YOLO11n, COCO), PyTorch 2.14 CPU, custom IoU tracker, FastAPI MJPEG server |
 | Tooling | Git, `.env` configuration, pinned `requirements.txt` + full `requirements.lock`, `package-lock.json`, PowerShell scripts |
@@ -105,7 +105,7 @@ kortex/
 ├─ services/api/             FastAPI backend
 │  ├─ app/{api/routes,core,db,models,schemas,services,websocket}
 │  │  └─ services/reconciliation.py   ← pure decision engine
-│  └─ tests/                 83 backend tests
+│  └─ tests/                 90 backend tests
 ├─ services/vision/          Webcam + YOLO + tracker + zone heuristic
 │  ├─ kortex_vision/
 │  └─ tests/                 13 vision tests
@@ -167,6 +167,8 @@ cd ../../apps/web && npm install
 | `KORTEX_VISION_API_KEY` | Shared key the vision service sends as `X-Vision-Key` |
 | `KORTEX_SEED_STAFF_PASSWORD` | Password given to the seeded `manager` / `attendant` accounts on first seed |
 | `KORTEX_CORS_ORIGINS` | Allowed browser origins |
+| `KORTEX_VISION_SIMULATOR` | `true` shows the simulated shelf in the customer app (for hosts without a camera). Default `false` |
+| `KORTEX_SESSION_IDLE_MINUTES` | Real sessions idle this long are closed automatically (default `240`, `0` disables). Demo sessions are kept |
 | `VISION_CAMERA_INDEX` / `VISION_CAMERA_URL` | Webcam index, or an RTSP/HTTP stream URL |
 | `VISION_PROCESS_FPS`, `VISION_MODEL`, `VISION_ZONE_ID`, `VISION_PORT` | Vision tuning |
 
@@ -219,7 +221,29 @@ This keeps everything on one platform and — critically — preserves **WebSock
 the Live Monitoring page's real-time event stream. The vision service stays on the demo laptop.
 Step-by-step guide: **[docs/deploy.md](docs/deploy.md)**.
 
-### Using a phone
+### Trying it without a camera (simulated shelf)
+
+A hosted demo has no webcam, so the shelf side would otherwise be invisible. Set
+`KORTEX_VISION_SIMULATOR=true` on the API and the customer app gains a **Try the shelf
+check** card, labelled *Simulated*. A shopper taps **Pick up** / **Put back** on a product
+and the server treats it exactly like a camera event for that shopper's own session:
+
+* pick up, then scan within the grace window → matched, "seen on the shelf";
+* pick up and never scan → after the grace window, a missed-scan prompt with a one-tap fix;
+* scan one product, pick up another → a wrong-product prompt;
+* pick up, then put back → nothing to resolve.
+
+Every such event is stored as `SIMULATED`. The API never reports a camera as online unless
+a real vision service is sending heartbeats.
+
+### Phones
+
+The whole app, dashboard included, is built for phones first: a bottom tab bar, card
+layouts instead of wide tables, 44 px touch targets, 16 px form fields, safe-area insets
+and `dvh` heights. It was checked in Chrome's device emulation at 360, 390 and 430 px with
+touch and 4× CPU throttling, not on physical devices.
+
+### Using a phone on the local network
 
 Browsers only allow camera access over **HTTPS** (or on `localhost`). To scan from a phone on the same Wi-Fi:
 
@@ -234,7 +258,7 @@ allow Node.js on **private** networks.
 
 On a laptop, `/shop` uses the webcam for barcode scanning. If the camera is denied, missing,
 or blocked by an insecure context, the app explains why and offers **Type code** and
-**Find item** fallbacks. Unknown barcodes are never added to the cart.
+**Browse** fallbacks. Unknown barcodes are never added to the cart.
 
 ### Using the webcam for shelf vision
 
@@ -251,9 +275,9 @@ and are never written to disk.
 
 ## 7. Jury demo scenarios
 
-Click **Start Demo** (top bar) → choose a scenario. Each run creates a **new labelled demo
+Click **Run demo** (top bar) → choose a scenario. Each run creates a **new labelled demo
 session** (existing data is untouched) and executes step by step through the real API service
-layer, database, reconciliation engine and WebSockets. The run panel in **Live Monitoring**
+layer, database, reconciliation engine and WebSockets. The run panel on the **Live** page
 shows progress, a presenter hint, and an **Open customer app** link for that session.
 
 * **Fast-forward** skips the real 15 s grace window. The skip is recorded in the audit trail.
@@ -271,7 +295,7 @@ shows progress, a presenter hint, and an **Open customer app** link for that ses
 | G | Checkout blocked | Unresolved missed-scan candidate → checkout attempt gets **HTTP 409** with reasons | Customer app shows actionable blockers |
 | H | Successful checkout | Mismatch confirmed, checkout authorised, itemised bill, simulated exit | Receipt + audit trail |
 
-The **Simulate** card in Live Monitoring injects individual labelled events (pickup/return
+The **Simulate** card on the Live page injects individual labelled events (pickup/return
 with any confidence, simulated scans; under *More options*: track ID, uncertainty reason,
 weight readings, camera drop/reconnect, *Decide now*) into the same pipeline.
 
@@ -285,7 +309,7 @@ Results **observed on the development machine** (Windows 11, 10 Oct 2026):
 
 | Suite | Command | Result |
 |---|---|---|
-| API (engine unit tests + API integration + all 8 scenarios) | `pytest` | **83 passed** |
+| API (engine unit tests + API integration + all 8 scenarios) | `pytest` | **90 passed** |
 | API lint | `ruff check` | clean |
 | Vision (tracker, zone heuristic, event adapter) | `pytest` | **13 passed** |
 | Web typecheck (strict) | `tsc -b` | clean |
@@ -314,7 +338,9 @@ checkout. The live webcam stream was confirmed rendering in Live Monitoring.
 |---|---|
 | `pip`/`uv` SSL errors (`CERTIFICATE_VERIFY_FAILED`) | Antivirus HTTPS scanning or a proxy. The scripts pass `--native-tls` so uv trusts the Windows store. With pip, use `pip install truststore` then `--use-feature=truststore` (pip ≥ 24.2 does this by default). |
 | `OSError: [WinError 1114] … c10.dll` when importing torch | Your Python (e.g. Anaconda) ships an old MSVC runtime. Use the uv-managed CPython the setup script creates. |
-| Dashboard shows "Reconnecting" | The API isn't running on :8000, or you opened the API port directly instead of :5173. |
+| Sign-in or the shop says "Waking the demo server" | Free hosting puts the API to sleep when idle. The first request takes up to a minute; the page retries by itself. |
+| "No server connected" | The web app was built without `VITE_API_BASE_URL`. Set it on the static host and redeploy. |
+| Dashboard shows "Offline" next to the page title | The API isn't running on :8000, or you opened the API port directly instead of :5173. |
 | Customer scanner: "Camera needs a secure connection" | Use `start-web.ps1 -Https` on phones; `localhost` works on the laptop. |
 | Camera permission denied | Re-enable it in the browser's site settings, then **Retry camera**. |
 | Scanner says "Camera is being used by another app" | Windows allows one app per webcam. The vision service is using it: **Live Monitoring → Release webcam**, then **Retry camera** (or scan with a phone). |
@@ -336,6 +362,7 @@ checkout. The live webcam stream was confirmed rendering in Live Monitoring.
 | SKU-level recognition (e.g. "Dark Chocolate Bar") from the camera | 🧪 Only via simulated events or a future custom model |
 | Shelf-weight sensor | 🧪 Simulated (`SENSOR_SIMULATED`); live endpoint ready for ESP32 + HX711 |
 | Demo scenarios A–H | 🧪 Simulated inputs, real processing |
+| Simulated shelf in the customer app (`KORTEX_VISION_SIMULATOR`) | 🧪 Shopper-triggered simulated camera events, real processing |
 | Historical dashboard data | 🧪 Seeded demo sessions (flagged `is_demo`) |
 
 ## 11. Vision limitations (please read)
@@ -359,7 +386,9 @@ checkout. The live webcam stream was confirmed rendering in Live Monitoring.
 
 * Server-side validation everywhere. Client prices and totals are never trusted.
 * Staff: PBKDF2-hashed passwords and signed, expiring tokens. Customers: per-session random
-  tokens (only the hash is stored). Vision: shared key. Simulator: staff-only.
+  tokens (only the hash is stored). Vision: shared key. Simulator: staff-only, except the
+  simulated shelf, which a shopper can use for their own session only and only when
+  `KORTEX_VISION_SIMULATOR` is on.
 * No facial recognition, no person tracking (people are excluded from detection classes),
   no video stored, and no personal data collected (shoppers are "Guest 1234").
 * Append-only audit trail. Corrections never overwrite evidence.
