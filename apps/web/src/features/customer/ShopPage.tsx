@@ -90,7 +90,8 @@ function Welcome({ onStart }: { onStart: (c: ShopCredentials) => void }) {
   return (
     <div className="flex min-h-dvh flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]">
       <Logo />
-      <div className="flex flex-1 flex-col justify-center py-10">
+      {/* Anchored from the top so a late font swap or status notice never moves the headline. */}
+      <div className="flex-1 pb-10 pt-[16vh]">
         <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight text-fg">
           Scan.
           <br />
