@@ -40,11 +40,12 @@ def health(db: DB) -> dict:
     except Exception as exc:  # pragma: no cover - reported to the client
         db_ok = False
         db_error = type(exc).__name__
+    vision = vision_status(db) if db_ok else {}
     return {
         "api": {"ok": True, "version": "1.0.0"},
         "database": {"ok": db_ok, "error": db_error},
         "websocket": {"ok": True},
-        "vision": {"online": vision_status(db).get("online", False)},
+        "vision": {"online": vision.get("online", False), "simulated_shelf": vision.get("simulated_shelf", False)},
         "time": utcnow().isoformat(),
     }
 

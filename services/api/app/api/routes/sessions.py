@@ -6,7 +6,10 @@ from sqlalchemy import func, or_, select
 
 from app.api import serializers as ser
 from app.api.deps import DB, CustomerAuth, SessionAuth, Staff, staff_actor
-from app.core.errors import ConflictError, NotFoundError
+from app.core.config import get_settings
+from app.core.errors import ConflictError, ForbiddenError, NotFoundError
+from app.core.ids import new_id
+from app.core.time import utcnow
 from app.models import (
     Discrepancy,
     Product,
@@ -16,11 +19,10 @@ from app.models import (
     ShoppingSession,
     VisionEvent,
 )
-from app.models.enums import OPEN_DISCREPANCY_STATES, ActorType, SessionStatus
+from app.models.enums import OPEN_DISCREPANCY_STATES, ActorType, EventSource, SessionStatus, VisionEventType
 from app.schemas import api as s
 from app.services import audit, cart, checkout, pipeline, sessions
 from app.services.audit import Actor
-from app.websocket.hub import enqueue
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
@@ -203,25 +205,57 @@ def cancel_session(session_id: str, db: DB, access: SessionAuth) -> s.SessionOut
     session = access.session
     if session.status != SessionStatus.ACTIVE:
         raise ConflictError("Only active sessions can be cancelled")
-    session.status = SessionStatus.CANCELLED
-    from app.core.time import utcnow
-
-    session.ended_at = utcnow()
-    if session.zone_id:
-        from app.models import ZoneBinding
-
-        b = db.get(ZoneBinding, session.zone_id)
-        if b is not None and b.session_id == session.id:
-            sessions.bind_zone(db, b.zone_id, None, actor=access.actor)
-    audit.record(
-        db,
-        actor=access.actor,
-        event_type="SESSION_CANCELLED",
-        summary="Shopping session cancelled.",
-        session_id=session.id,
-        entity_type="session",
-        entity_id=session.id,
+    sessions.close_session(
+        db, session, actor=access.actor, event_type="SESSION_CANCELLED", summary="Shopping session cancelled."
     )
-    enqueue(db, "session.updated", session_id=session.id, data={"status": session.status})
     db.commit()
     return s.SessionOut.model_validate(session)
+
+
+SHELF_EVENT_LIMIT = 60
+
+
+@router.post("/{session_id}/shelf-events", response_model=s.VisionIngestResponse)
+def simulated_shelf_event(session_id: str, body: s.ShelfEventIn, db: DB, access: CustomerAuth):
+    """Hosted-demo stand-in for the shelf camera.
+
+    Lets a shopper say "I picked this up" / "I put this back" for their own
+    session. Only available when KORTEX_VISION_SIMULATOR is on; the event is
+    stored as SIMULATED and goes through the same pipeline as a camera event.
+    """
+    if not get_settings().vision_simulator:
+        raise ForbiddenError("The simulated shelf is not enabled on this server")
+    session = access.session
+    if session.status != SessionStatus.ACTIVE:
+        raise ConflictError("This shopping session is no longer active")
+    product = db.get(Product, body.product_id)
+    if product is None or not product.active:
+        raise NotFoundError("Product not found")
+    used = db.scalar(
+        select(func.count()).where(VisionEvent.session_id == session.id, VisionEvent.is_simulated.is_(True))
+    )
+    if (used or 0) >= SHELF_EVENT_LIMIT:
+        raise ConflictError("Simulated shelf limit reached for this session. Start a new session to continue.")
+    out = pipeline.ingest_vision_event(
+        db,
+        pipeline.VisionInput(
+            external_event_id=new_id("SHELF", 12),
+            zone_id=session.zone_id or sessions.DEFAULT_ZONE,
+            event_type=VisionEventType(body.event_type),
+            occurred_at=utcnow(),
+            source=EventSource.SIMULATED,
+            is_simulated=True,
+            session_id=session.id,
+            track_id=f"shelf-{session.id}-{product.sku}",
+            product_id=product.id,
+            model_confidence=0.9,
+            track_frames=12,
+        ),
+        actor=Actor(ActorType.SIMULATOR, f"simulated-shelf:{session.customer_label}"),
+    )
+    db.commit()
+    return s.VisionIngestResponse(
+        event=s.VisionEventOut.model_validate(out.event),
+        replay=out.replay,
+        discrepancy_id=out.discrepancy.id if out.discrepancy else None,
+    )

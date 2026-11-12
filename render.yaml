@@ -27,6 +27,9 @@ services:
         generateValue: true
       - key: KORTEX_SEED_STAFF_PASSWORD
         sync: false
+      # No webcam on a hosted server: let shoppers drive a labelled simulated shelf.
+      - key: KORTEX_VISION_SIMULATOR
+        value: "true"
       - key: KORTEX_CORS_ORIGINS
         fromService:
           name: kortex-web
@@ -65,4 +68,4 @@ services:
           name: kortex-api
           type: web
           property: host
-        # Render wires this to the API URL automatically.
+        # Render supplies the bare host name; the web app adds https:// itself.

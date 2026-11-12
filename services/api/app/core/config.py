@@ -33,8 +33,13 @@ class Settings(BaseSettings):
     # Interval of the background sweeper that finalises pending vision events.
     sweep_interval_seconds: float = 2.0
     environment: str = "development"
-    # Enable the built-in vision simulator for cloud demos (no physical camera).
+    # Hosted demos have no webcam. When true, the customer app shows a clearly
+    # labelled "simulated shelf" so a visitor can pick items up and put them back;
+    # those events go through the real pipeline as SIMULATED.
     vision_simulator: bool = False
+    # Real (non-demo) sessions with no activity for this long are closed by the
+    # sweeper so the dashboard never counts abandoned carts as active. 0 disables.
+    session_idle_minutes: int = 240
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Query
 from sqlalchemy import select
 
 from app.api.deps import DB, Staff, VisionKey
+from app.core.config import get_settings
 from app.core.time import utcnow
 from app.models import ServiceHeartbeat, VisionEvent
 from app.models.enums import ActorType, EventSource, VisionEventType
@@ -100,12 +101,15 @@ def heartbeat(body: s.HeartbeatIn, db: DB, _key: VisionKey) -> dict:
 
 
 def vision_status(db) -> dict:
+    """`online` is only ever true for a real vision-service heartbeat."""
+    simulated_shelf = get_settings().vision_simulator
     hb = db.get(ServiceHeartbeat, "vision")
     if hb is None:
         return {
             "online": False,
             "status": None,
             "last_seen_at": None,
+            "simulated_shelf": simulated_shelf,
             "message": "Vision service has not connected yet.",
         }
     online = utcnow() - hb.last_seen_at < HEARTBEAT_STALE_AFTER
@@ -113,6 +117,7 @@ def vision_status(db) -> dict:
         "online": online,
         "status": hb.status,
         "last_seen_at": hb.last_seen_at.isoformat(),
+        "simulated_shelf": simulated_shelf,
         "message": None if online else "No heartbeat in the last 15 seconds — vision service is not running.",
     }
 

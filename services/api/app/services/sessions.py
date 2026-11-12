@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
+from datetime import timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.core.errors import AuthError, NotFoundError
 from app.core.ids import new_token
 from app.core.security import constant_time_equals
+from app.core.time import utcnow
 from app.models import Discrepancy, ScanEvent, ShoppingSession, Store, VisionEvent, ZoneBinding
 from app.models.enums import (
     OPEN_DISCREPANCY_STATES,
@@ -112,6 +114,60 @@ def create_session(
         bind_zone(db, monitor_zone, session.id, actor=actor)
     enqueue(db, "session.created", session_id=session.id, data={"id": session.id})
     return session, token
+
+
+def close_session(db: Session, session: ShoppingSession, *, actor: Actor, event_type: str, summary: str) -> None:
+    """Mark an active session as cancelled and release its camera zone."""
+    session.status = SessionStatus.CANCELLED
+    session.ended_at = utcnow()
+    if session.zone_id:
+        binding = db.get(ZoneBinding, session.zone_id)
+        if binding is not None and binding.session_id == session.id:
+            bind_zone(db, binding.zone_id, None, actor=actor)
+    audit.record(
+        db,
+        actor=actor,
+        event_type=event_type,
+        summary=summary,
+        session_id=session.id,
+        entity_type="session",
+        entity_id=session.id,
+    )
+    enqueue(db, "session.updated", session_id=session.id, data={"status": session.status})
+
+
+def expire_idle(db: Session, idle_minutes: int) -> int:
+    """Close real sessions nobody has touched for `idle_minutes`.
+
+    Seeded and scenario sessions (is_demo) are kept so the dashboard history
+    stays intact. Open alerts on an expired session are closed with a reason
+    instead of waiting on a shopper who has left.
+    """
+    if idle_minutes <= 0:
+        return 0
+    from app.services import discrepancies
+
+    cutoff = utcnow() - timedelta(minutes=idle_minutes)
+    stale = list(
+        db.scalars(
+            select(ShoppingSession).where(
+                ShoppingSession.status == SessionStatus.ACTIVE,
+                ShoppingSession.is_demo.is_(False),
+                ShoppingSession.last_activity_at < cutoff,
+            )
+        )
+    )
+    for session in stale:
+        for d in discrepancies.open_for_session(db, session.id):
+            discrepancies.auto_resolve(db, d, "Session closed after inactivity.", "SESSION_EXPIRED")
+        close_session(
+            db,
+            session,
+            actor=audit.SYSTEM,
+            event_type="SESSION_EXPIRED",
+            summary=f"Session closed automatically after {idle_minutes} minutes without activity.",
+        )
+    return len(stale)
 
 
 def verification_summary(db: Session, session: ShoppingSession) -> dict:

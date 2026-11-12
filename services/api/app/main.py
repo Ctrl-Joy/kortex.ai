@@ -20,19 +20,23 @@ from app.db import session as db_session
 from app.db.init_db import init_db
 from app.db.seed import seed_core
 from app.services import pipeline
+from app.services import sessions as session_service
 from app.websocket import routes as ws_routes
 from app.websocket.hub import hub
 
 log = logging.getLogger("kortex")
 
 
-async def _sweeper(interval: float) -> None:
-    """Finalise pickups whose scan grace window has expired."""
+async def _sweeper(interval: float, idle_minutes: int) -> None:
+    """Finalise pickups whose scan grace window has expired and close abandoned sessions."""
 
     def tick() -> int:
         with db_session.SessionLocal() as db:
             n = pipeline.finalize_pending(db)
+            expired = session_service.expire_idle(db, idle_minutes)
             db.commit()
+            if expired:
+                log.info("closed %d idle session(s)", expired)
             return n
 
     while True:
@@ -54,21 +58,16 @@ async def lifespan(app: FastAPI):
     hub.bind_loop(asyncio.get_running_loop())
     task = None
     if settings.sweep_interval_seconds > 0:
-        task = asyncio.create_task(_sweeper(settings.sweep_interval_seconds))
+        task = asyncio.create_task(_sweeper(settings.sweep_interval_seconds, settings.session_idle_minutes))
     if settings.uses_insecure_defaults:
         log.warning("KORTEX is running with a development secret key. Set KORTEX_SECRET_KEY in .env.")
     if settings.vision_simulator:
-        from vision_simulator import start as start_vision_sim
-        start_vision_sim(db_session.SessionLocal)
-        log.info("Vision simulator enabled (KORTEX_VISION_SIMULATOR=true)")
+        log.info("Simulated shelf enabled for the customer app (KORTEX_VISION_SIMULATOR=true)")
     yield
     if task:
         task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await task
-    if settings.vision_simulator:
-        from vision_simulator import stop as stop_vision_sim
-        stop_vision_sim()
 
 
 def create_app() -> FastAPI:

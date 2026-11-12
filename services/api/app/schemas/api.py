@@ -313,6 +313,16 @@ class DiscrepancyDetailOut(DiscrepancyOut):
     reconciliation: ReconciliationOut | None
 
 
+class PendingPickupOut(BaseModel):
+    """A pickup the camera saw that is still waiting for its scan."""
+
+    id: str
+    product_id: str | None
+    product_name: str | None
+    is_simulated: bool
+    finalize_after: datetime | None
+
+
 class CustomerSessionState(BaseModel):
     """Everything the customer app needs, in one round trip."""
 
@@ -324,6 +334,8 @@ class CustomerSessionState(BaseModel):
     discrepancies: list[DiscrepancyOut]
     recent_scans: list[ScanEventOut]
     checkout: CheckoutRecordOut | None
+    simulated_shelf: bool = False
+    pending_pickups: list[PendingPickupOut] = []
 
 
 class CartStateOut(BaseModel):
@@ -413,6 +425,13 @@ class VisionEventIn(BaseModel):
     contradictory: bool = False
     model_name: str | None = Field(default=None, max_length=64)
     bbox: list[float] | None = None
+
+
+class ShelfEventIn(BaseModel):
+    """A shopper's simulated shelf interaction (hosted demo, no camera)."""
+
+    product_id: str = Field(max_length=32)
+    event_type: Literal["PICKUP", "RETURN"] = "PICKUP"
 
 
 class SimulatedVisionEventIn(VisionEventIn):

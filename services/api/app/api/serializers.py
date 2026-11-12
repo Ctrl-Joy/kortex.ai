@@ -7,6 +7,7 @@ from collections import defaultdict
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.models import (
     CheckoutRecord,
     Discrepancy,
@@ -17,7 +18,7 @@ from app.models import (
     ShoppingSession,
     VisionEvent,
 )
-from app.models.enums import OPEN_DISCREPANCY_STATES, ScanStatus
+from app.models.enums import OPEN_DISCREPANCY_STATES, ScanStatus, VisionEventState, VisionEventType
 from app.schemas import api as s
 from app.services import cart, checkout, sessions
 from app.services.discrepancies import KIND_LABELS
@@ -87,7 +88,28 @@ def customer_state(db: Session, session: ShoppingSession) -> s.CustomerSessionSt
     scans = db.scalars(
         select(ScanEvent).where(ScanEvent.session_id == session.id).order_by(ScanEvent.received_at.desc()).limit(15)
     ).all()
+    pending = db.scalars(
+        select(VisionEvent)
+        .where(
+            VisionEvent.session_id == session.id,
+            VisionEvent.event_type == VisionEventType.PICKUP,
+            VisionEvent.state == VisionEventState.OBSERVED,
+        )
+        .order_by(VisionEvent.occurred_at)
+    ).all()
+    names = {p.id: p.name for p in db.scalars(select(Product).where(Product.id.in_([v.product_id for v in pending])))}
     return s.CustomerSessionState(
+        simulated_shelf=get_settings().vision_simulator,
+        pending_pickups=[
+            s.PendingPickupOut(
+                id=v.id,
+                product_id=v.product_id,
+                product_name=names.get(v.product_id),
+                is_simulated=v.is_simulated,
+                finalize_after=v.finalize_after,
+            )
+            for v in pending
+        ],
         session=s.SessionOut.model_validate(session),
         lines=[line(x) for x in lines],
         item_count=count,
