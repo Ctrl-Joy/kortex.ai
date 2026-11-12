@@ -25,7 +25,7 @@ export function TH({ className, ...props }: React.ThHTMLAttributes<HTMLTableCell
   return (
     <th
       className={cn(
-        "border-b border-line bg-surface-2/60 px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-subtle whitespace-nowrap",
+        "border-b border-line px-4 py-2.5 text-left text-xs font-medium text-subtle whitespace-nowrap",
         className,
       )}
       {...props}
@@ -57,7 +57,7 @@ export function Pagination({
       </span>
       <div className="flex items-center gap-1">
         <button
-          className="cursor-pointer rounded-md px-2.5 py-1 hover:bg-surface-2 hover:text-fg disabled:cursor-default disabled:opacity-40"
+          className="cursor-pointer rounded-md px-2.5 py-1 hover:bg-surface-2 hover:text-fg disabled:cursor-default disabled:opacity-40 pointer-coarse:min-h-11 pointer-coarse:px-3"
           disabled={page <= 1}
           onClick={() => onChange(Math.max(0, offset - limit))}
         >
@@ -67,7 +67,7 @@ export function Pagination({
           {page} / {pages}
         </span>
         <button
-          className="cursor-pointer rounded-md px-2.5 py-1 hover:bg-surface-2 hover:text-fg disabled:cursor-default disabled:opacity-40"
+          className="cursor-pointer rounded-md px-2.5 py-1 hover:bg-surface-2 hover:text-fg disabled:cursor-default disabled:opacity-40 pointer-coarse:min-h-11 pointer-coarse:px-3"
           disabled={page >= pages}
           onClick={() => onChange(offset + limit)}
         >

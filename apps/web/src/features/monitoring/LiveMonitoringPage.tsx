@@ -7,7 +7,6 @@ import {
   Copy,
   ExternalLink,
   FastForward,
-  FlaskConical,
   Play,
   Plus,
   ScanBarcode,
@@ -54,7 +53,7 @@ export default function LiveMonitoringPage() {
   return (
     <div className="space-y-5">
       {runId && <DemoRunPanel runId={runId} onClose={() => setParams({}, { replace: true })} />}
-      <div className="grid gap-5 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid items-start gap-5 xl:grid-cols-[1.3fr_1fr]">
         <CameraPanel sessionId={sessionId} />
         <SimulationPanel sessionId={sessionId} />
       </div>
@@ -89,6 +88,8 @@ function CameraPanel({ sessionId }: { sessionId: string | null }) {
   });
 
   const mapped = Object.entries(v?.status?.mapped_classes ?? {});
+  // A hosted server has no webcam; say so instead of telling a visitor to run a script.
+  const hosted = !online && !!v?.simulated_shelf;
 
   return (
     <Card className="overflow-hidden">
@@ -96,6 +97,7 @@ function CameraPanel({ sessionId }: { sessionId: string | null }) {
         icon={camLive ? <Camera /> : <CameraOff />}
         title="Shelf camera"
         description={`Zone ${ZONE}`}
+        className="border-b-0"
         actions={
           <>
             {camLive && VISION_BASE && (
@@ -111,8 +113,8 @@ function CameraPanel({ sessionId }: { sessionId: string | null }) {
               </Button>
             )}
             {camLive ? (
-              <Badge tone="accent" size="md">
-                <CircleDot className="animate-pulse" /> LIVE
+              <Badge tone="ok" size="md">
+                <CircleDot /> Live
               </Badge>
             ) : (
               <Badge tone="neutral" size="md">
@@ -122,13 +124,13 @@ function CameraPanel({ sessionId }: { sessionId: string | null }) {
           </>
         }
       />
-      <div className="relative aspect-video w-full bg-canvas">
+      <div className={cn("relative w-full bg-canvas", camLive ? "aspect-video" : "py-4")}>
         {camLive && !VISION_BASE ? (
-          <div className="grid-bg flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
+          <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
             <Camera className="size-6 text-accent" />
             <p className="text-sm font-medium text-fg">Camera is live on the demo laptop</p>
             <p className="mx-auto max-w-sm text-[13px] text-muted">
-              Its detections reach this site as LIVE CAMERA events. The video preview itself is only shown on the laptop running the vision service.
+              Its detections arrive here as live camera events. The video preview is only shown on the laptop running the vision service.
             </p>
           </div>
         ) : camLive && !streamError ? (
@@ -140,7 +142,7 @@ function CameraPanel({ sessionId }: { sessionId: string | null }) {
             onError={() => setStreamError(true)}
           />
         ) : (
-          <div className="grid-bg flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+          <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
             <CameraOff className="size-6 text-subtle" />
             <div>
               <p className="text-sm font-medium text-fg">
@@ -150,17 +152,21 @@ function CameraPanel({ sessionId }: { sessionId: string | null }) {
                     ? streamError
                       ? "Stream unavailable"
                       : `Camera ${humanize(v?.status?.camera_status)}`
-                    : "Vision service not running"}
+                    : hosted
+                      ? "No camera on this server"
+                      : "Vision service not running"}
               </p>
               <p className="mx-auto mt-1 max-w-sm text-[13px] text-muted">
                 {paused
                   ? "The barcode scanner can use it now. Nothing on the shelf is observed until you resume."
                   : online
                     ? (v?.status?.message ?? "Check that no other app is using the webcam.")
-                    : "Simulation still works. Start the service to use the real camera:"}
+                    : hosted
+                      ? "Use Simulate below, run a demo scenario, or use the simulated shelf in the customer app. Everything goes through the real pipeline."
+                      : "Simulation still works. Start the service to use the real camera:"}
               </p>
             </div>
-            {!online && (
+            {!online && !hosted && (
               <code className="flex items-center gap-2 rounded-md border border-line bg-surface px-3 py-1.5 font-mono text-xs text-muted">
                 <Terminal className="size-3.5" /> scripts\start-vision.ps1
               </code>
@@ -173,21 +179,17 @@ function CameraPanel({ sessionId }: { sessionId: string | null }) {
           </div>
         )}
       </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line px-4 py-2 text-xs text-muted sm:px-5">
-        {camLive ? (
-          <>
+      {camLive && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line px-4 py-2 text-xs text-muted sm:px-5">
             <span>
               {v?.status?.model_name} · <span className="num">{v?.status?.fps?.toFixed(1)}</span> detections/s
             </span>
             <Tooltip content={mapped.length ? mapped.map(([c, sku]) => `${c} → ${sku}`).join(", ") : "No catalogue products are mapped to detector classes"}>
               <span className="cursor-help underline decoration-dotted underline-offset-2">Generic classes, not SKUs</span>
             </Tooltip>
-            <span>Boxes = real model output · no frames stored</span>
-          </>
-        ) : (
-          <span>Real camera events appear as LIVE CAMERA; simulated ones as SIMULATED.</span>
-        )}
-      </div>
+          <span>No frames are stored</span>
+        </div>
+      )}
       <SessionBinder sessionId={sessionId} />
     </Card>
   );
@@ -213,18 +215,18 @@ function SessionBinder({ sessionId }: { sessionId: string | null }) {
   });
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-t border-line bg-surface-2/40 px-4 py-3 sm:px-5">
-      <label htmlFor="bind" className="text-[13px] text-muted">
-        Watching
+    <div className="flex flex-wrap items-center gap-2 border-t border-line px-4 py-3 sm:px-5">
+      <label htmlFor="bind" className="w-full text-[13px] text-muted sm:w-auto">
+        Session being watched
       </label>
       <NativeSelect
         id="bind"
         value={sessionId ?? ""}
         onChange={(e) => bind.mutate(e.target.value || null)}
         disabled={bind.isPending}
-        className="h-8 min-w-0 flex-1 basis-48"
+        className="min-w-0 flex-1 basis-48 sm:h-8"
       >
-        <option value="">No session — events are logged as unassigned</option>
+        <option value="">None (events stay unassigned)</option>
         {sessions.data?.items.map((s) => (
           <option key={s.id} value={s.id}>
             {s.id} · {s.customer_label}
@@ -313,21 +315,18 @@ function SimulationPanel({ sessionId }: { sessionId: string | null }) {
   const disabled = !sessionId;
 
   return (
-    <Card className="border-sim/30">
+    <Card>
       <CardHeader
-        icon={<FlaskConical />}
         title={
           <span className="flex items-center gap-2">
-            Simulate <Badge tone="sim">SIMULATED</Badge>
+            Simulate <Badge tone="sim">Simulated</Badge>
           </span>
         }
-        description="Labelled test events through the real pipeline."
+        description="Send a test event through the real pipeline."
       />
       <CardBody className="space-y-4">
         {disabled && (
-          <p className="rounded-md border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-warn">
-            Choose a session to watch (camera card) to enable simulation.
-          </p>
+          <p className="rounded-lg bg-warn/10 px-3 py-2 text-[13px] text-warn">Pick a session to watch first, or create a demo session.</p>
         )}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Product" htmlFor="sim-product">
@@ -355,7 +354,7 @@ function SimulationPanel({ sessionId }: { sessionId: string | null }) {
             step={0.01}
             value={confidence}
             onChange={(e) => setConfidence(Number(e.target.value))}
-            className="w-full accent-[#a78bfa]"
+            className="h-11 w-full accent-[#a99cf5] sm:h-6"
           />
         </Field>
         <div className="flex flex-wrap gap-2">
@@ -383,7 +382,7 @@ function SimulationPanel({ sessionId }: { sessionId: string | null }) {
         </div>
 
         <button
-          className="flex w-full cursor-pointer items-center justify-between border-t border-line pt-3 text-[13px] font-medium text-muted hover:text-fg"
+          className="flex min-h-11 w-full cursor-pointer items-center justify-between border-t border-line pt-1 text-[13px] font-medium text-muted hover:text-fg"
           onClick={() => setMore((m) => !m)}
           aria-expanded={more}
         >
@@ -461,7 +460,7 @@ function ActivityPanel({ sessionId }: { sessionId: string | null }) {
             </TabsTrigger>
           </TabsList>
           {sessionId && (
-            <Link to={`/sessions/${sessionId}`} className="font-mono text-xs text-accent hover:underline">
+            <Link to={`/sessions/${sessionId}`} className="font-mono text-xs tap text-accent hover:underline">
               {sessionId}
             </Link>
           )}
@@ -620,7 +619,7 @@ function DemoRunPanel({ runId, onClose }: { runId: string; onClose: () => void }
   if (run.isError)
     return (
       <Card className="border-warn/30">
-        <CardBody className="flex items-center justify-between text-[13px] text-warn">
+        <CardBody className="flex items-center justify-between gap-3 text-[13px] text-warn">
           {errorMessage(run.error)}
           <Button size="sm" variant="ghost" onClick={onClose}>
             Dismiss
@@ -634,9 +633,8 @@ function DemoRunPanel({ runId, onClose }: { runId: string; onClose: () => void }
   const done = r.steps.filter((s) => s.status === "DONE").length;
 
   return (
-    <Card className="border-sim/40 bg-gradient-to-br from-sim/[0.06] to-transparent">
+    <Card className="border-sim/40">
       <CardHeader
-        icon={<FlaskConical />}
         title={
           <span className="flex flex-wrap items-center gap-2">
             Scenario {r.scenario} · {r.title}
@@ -651,7 +649,7 @@ function DemoRunPanel({ runId, onClose }: { runId: string; onClose: () => void }
             {r.session_id && (
               <>
                 {" · "}
-                <Link className="font-mono text-accent hover:underline" to={`/sessions/${r.session_id}`}>
+                <Link className="font-mono tap text-accent hover:underline" to={`/sessions/${r.session_id}`}>
                   {r.session_id}
                 </Link>
               </>

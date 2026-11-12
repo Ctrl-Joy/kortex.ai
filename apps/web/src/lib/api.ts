@@ -1,6 +1,9 @@
 import { authStore } from "@/lib/auth";
 
-const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+// Render's Blueprint injects a bare host name; accept that as well as a full URL.
+const RAW_BASE = ((import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "").trim().replace(/\/$/, "");
+export const API_BASE = RAW_BASE && !/^https?:\/\//.test(RAW_BASE) ? `https://${RAW_BASE}` : RAW_BASE;
+const BASE = API_BASE;
 
 export class ApiError extends Error {
   constructor(
@@ -43,7 +46,13 @@ export async function request<T>(path: string, { method = "GET", body, auth = "s
     });
   } catch (err) {
     if ((err as Error).name === "AbortError") throw err;
-    throw new ApiError(0, "network_error", "Cannot reach the KORTEX API. Is the backend running?");
+    throw new ApiError(0, "network_error", "Can\u2019t reach the KORTEX server. Check your connection and try again.");
+  }
+
+  // A static host answers unknown paths with the app's own index.html. That
+  // means no API is wired to this site (VITE_API_BASE_URL was not set at build).
+  if (res.ok && (res.headers.get("content-type") ?? "").includes("text/html")) {
+    throw new ApiError(0, "api_not_configured", "This site isn\u2019t connected to a KORTEX server.");
   }
 
   if (res.status === 204) return undefined as T;

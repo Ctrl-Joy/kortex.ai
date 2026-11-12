@@ -59,7 +59,7 @@ export default function DiscrepanciesPage() {
               aria-selected={state === t.v}
               onClick={() => set({ state: t.v === "" ? "ALL" : t.v })}
               className={cn(
-                "cursor-pointer rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors",
+                "cursor-pointer rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11",
                 (state === t.v || (t.v === "" && state === "ALL")) ? "bg-surface-3 text-fg" : "text-muted hover:text-fg",
               )}
             >
@@ -67,8 +67,8 @@ export default function DiscrepanciesPage() {
             </button>
           ))}
         </div>
-        <div className="ml-auto flex gap-2">
-          <NativeSelect aria-label="Category" value={kind} onChange={(e) => set({ kind: e.target.value })} className="w-auto">
+        <div className="flex w-full gap-2 sm:ml-auto sm:w-auto">
+          <NativeSelect aria-label="Category" value={kind} onChange={(e) => set({ kind: e.target.value })} className="min-w-0 flex-1 sm:w-auto sm:flex-none">
             <option value="">All categories</option>
             <option value="MISSED_SCAN">Potential missed scan</option>
             <option value="WRONG_PRODUCT">Possible wrong-product scan</option>
@@ -77,7 +77,7 @@ export default function DiscrepanciesPage() {
             <option value="PICKUP_RETURN">Pickup followed by return</option>
             <option value="CONFLICTING_EVIDENCE">Conflicting / incomplete evidence</option>
           </NativeSelect>
-          <NativeSelect aria-label="Source" value={source} onChange={(e) => set({ source: e.target.value })} className="w-auto">
+          <NativeSelect aria-label="Source" value={source} onChange={(e) => set({ source: e.target.value })} className="min-w-0 flex-1 sm:w-auto sm:flex-none">
             <option value="">All sources</option>
             <option value="real">Real events only</option>
             <option value="simulated">Simulated only</option>

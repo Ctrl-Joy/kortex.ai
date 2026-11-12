@@ -85,7 +85,7 @@ describe("customer scan-and-go", () => {
     await userEvent.click(await screen.findByRole("button", { name: /Start shopping/ }));
     expect(await screen.findByText("Your cart is empty")).toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem("kortex.shop")!)).toEqual({ sessionId: "SES-TEST", token: "new-token" });
-    expect(calls[0].method).toBe("POST");
+    expect(calls.some((c) => c.method === "POST" && c.url === "/api/sessions")).toBe(true);
   });
 
   it("explains a backend checkout denial instead of only disabling a button", async () => {
@@ -116,6 +116,54 @@ describe("customer scan-and-go", () => {
     expect(await screen.findByText(/A few checks are needed/)).toBeInTheDocument();
     expect(screen.getByText(/Unresolved possible wrong-product scan/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Pay/ })).toBeDisabled();
+  });
+});
+
+describe("simulated shelf (hosted demo)", () => {
+  const mug = { ...customerState().lines[0].product, id: "PRD-MUG", name: "Ceramic Coffee Mug 350 ml", barcode: "8901001000056" };
+
+  it("is hidden unless the server enables it", async () => {
+    localStorage.setItem("kortex.shop", JSON.stringify({ sessionId: "SES-TEST", token: "tok" }));
+    mockFetch((req) => {
+      if (req.startsWith("GET /api/sessions/SES-TEST/state")) return { body: customerState({ discrepancies: [] }) };
+      if (req.startsWith("GET /api/products")) return { body: { items: [mug], total: 1, limit: 50, offset: 0 } };
+      return undefined;
+    });
+    renderWithProviders(<ShopPage />, { route: "/shop" });
+    expect(await screen.findByText("Your cart")).toBeInTheDocument();
+    expect(screen.queryByText("Try the shelf check")).not.toBeInTheDocument();
+  });
+
+  it("sends a labelled pickup for the shopper's own session and shows the wait for a scan", async () => {
+    localStorage.setItem("kortex.shop", JSON.stringify({ sessionId: "SES-TEST", token: "tok-9" }));
+    let picked = false;
+    const calls = mockFetch((req) => {
+      if (req.startsWith("GET /api/sessions/SES-TEST/state"))
+        return {
+          body: customerState({
+            discrepancies: [],
+            simulated_shelf: true,
+            verification: { ...customerState().verification, status: picked ? "VERIFYING" : "VERIFIED", open_blocking: 0, pending_observations: picked ? 1 : 0 },
+            pending_pickups: picked ? [{ id: "VIS-1", product_id: mug.id, product_name: mug.name, is_simulated: true, finalize_after: new Date(Date.now() + 15_000).toISOString() }] : [],
+          }),
+        };
+      if (req.startsWith("GET /api/products")) return { body: { items: [mug], total: 1, limit: 50, offset: 0 } };
+      if (req.startsWith("POST /api/sessions/SES-TEST/shelf-events")) {
+        picked = true;
+        return { body: { event: { id: "VIS-1" }, replay: false, discrepancy_id: null } };
+      }
+      return undefined;
+    });
+    renderWithProviders(<ShopPage />, { route: "/shop" });
+    expect(await screen.findByText("Try the shelf check")).toBeInTheDocument();
+    expect(screen.getByText("Simulated")).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("button", { name: "Pick up" }));
+    await waitFor(() => expect(calls.some((c) => c.url.includes("shelf-events"))).toBe(true));
+    const call = calls.find((c) => c.url.includes("shelf-events"))!;
+    expect(call.body).toEqual({ product_id: "PRD-MUG", event_type: "PICKUP" });
+    expect(call.headers["X-Session-Token"]).toBe("tok-9");
+    expect(await screen.findByText(/Scan Ceramic Coffee Mug/)).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Put back" })).toBeInTheDocument();
   });
 });
 

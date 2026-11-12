@@ -25,10 +25,12 @@ createRoot(document.getElementById("root")!).render(
         <RouterProvider router={router} />
         <Toaster
           theme="dark"
-          position="top-right"
+          position="bottom-right"
+          // On phones, sit above the tab bar / checkout bar instead of covering the header.
+          mobileOffset={{ bottom: "calc(5.75rem + env(safe-area-inset-bottom))", left: 12, right: 12 }}
           richColors
           closeButton
-          toastOptions={{ style: { background: "#0f182a", border: "1px solid #283a5a", color: "#e7edf7" } }}
+          toastOptions={{ style: { background: "#17181b", border: "1px solid #33363d", color: "#ececee" } }}
         />
       </TooltipProvider>
     </QueryClientProvider>

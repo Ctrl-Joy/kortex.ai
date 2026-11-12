@@ -4,31 +4,34 @@
 
 /* ------------------------------------------------------------------------
    KORTEX design tokens
-   Midnight navy surfaces, restrained cyan/teal accents and semantic states:
-   ok = verified, warn = uncertain, bad = unresolved, sim = simulated source.
+
+   Flat graphite surfaces, hairline borders, one brand hue (scanner cyan) and
+   four status colours that each mean exactly one thing:
+     ok   = verified / done          warn = waiting on someone
+     bad  = blocked / needs staff    sim  = simulated, not real sensor data
    ------------------------------------------------------------------------ */
 @theme {
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --color-canvas: #060a13;
-  --color-surface: #0b1220;
-  --color-surface-2: #0f182a;
-  --color-surface-3: #152036;
-  --color-line: #1b2740;
-  --color-line-strong: #283a5a;
-  --color-fg: #e7edf7;
-  --color-muted: #9aa8bf;
-  --color-subtle: #66748c;
+  --color-canvas: #0b0c0e;
+  --color-surface: #111214;
+  --color-surface-2: #17181b;
+  --color-surface-3: #1f2125;
+  --color-line: #23252a;
+  --color-line-strong: #33363d;
+  --color-fg: #ececee;
+  --color-muted: #a3a6ad;
+  --color-subtle: #7d8089;
 
-  --color-accent: #22d3ee;
-  --color-accent-strong: #06b6d4;
-  --color-teal: #2dd4bf;
-  --color-ok: #34d399;
-  --color-warn: #fbbf24;
+  --color-accent: #4dd4e6;
+  --color-accent-strong: #2bb8cc;
+  --color-teal: #4dd4e6;
+  --color-ok: #4ade80;
+  --color-warn: #f5b942;
   --color-bad: #f87171;
-  --color-info: #60a5fa;
-  --color-sim: #a78bfa;
+  --color-info: #a3a6ad;
+  --color-sim: #a99cf5;
 
   --radius-xs: 4px;
   --radius-sm: 6px;
@@ -36,13 +39,12 @@
   --radius-lg: 12px;
   --radius-xl: 16px;
 
-  --shadow-card: 0 1px 0 0 rgb(255 255 255 / 0.03) inset, 0 8px 24px -12px rgb(0 0 0 / 0.6);
-  --shadow-pop: 0 16px 48px -12px rgb(0 0 0 / 0.75), 0 0 0 1px rgb(255 255 255 / 0.04);
-  --shadow-glow: 0 0 0 1px rgb(34 211 238 / 0.35), 0 0 24px -4px rgb(34 211 238 / 0.35);
+  --shadow-card: none;
+  --shadow-pop: 0 18px 50px -12px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.03);
+  --shadow-glow: 0 0 0 1px var(--color-accent);
 
-  --animate-fade-in: fade-in 180ms ease-out;
-  --animate-slide-up: slide-up 220ms cubic-bezier(0.16, 1, 0.3, 1);
-  --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
+  --animate-fade-in: fade-in 160ms ease-out;
+  --animate-slide-up: slide-up 200ms cubic-bezier(0.16, 1, 0.3, 1);
   --animate-scan-line: scan-line 2.2s ease-in-out infinite;
 
   @keyframes fade-in {
@@ -52,11 +54,6 @@
   @keyframes slide-up {
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes pulse-ring {
-    0% { box-shadow: 0 0 0 0 currentColor; opacity: 0.9; }
-    70% { box-shadow: 0 0 0 6px transparent; opacity: 1; }
-    100% { box-shadow: 0 0 0 0 transparent; }
   }
   @keyframes scan-line {
     0%, 100% { transform: translateY(0); }
@@ -75,18 +72,26 @@
   }
   body {
     @apply bg-canvas text-fg font-sans antialiased;
-    font-feature-settings: "cv11", "ss01", "ss03";
-    background-image:
-      radial-gradient(1200px 600px at 10% -10%, rgb(34 211 238 / 0.06), transparent 60%),
-      radial-gradient(900px 500px at 110% 10%, rgb(45 212 191 / 0.04), transparent 60%);
-    background-attachment: fixed;
+    font-feature-settings: "cv11", "ss01";
   }
   ::selection {
-    background: rgb(34 211 238 / 0.3);
+    background: rgb(77 212 230 / 0.28);
   }
   :focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
+    border-radius: 4px;
+  }
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="radio"],
+  select,
+  summary {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: default;
   }
   * {
     scrollbar-width: thin;
@@ -97,25 +102,43 @@
     *::before,
     *::after {
       animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
     }
   }
 }
 
 @layer components {
   .card {
-    @apply rounded-lg border border-line bg-surface shadow-[var(--shadow-card)];
+    @apply rounded-xl border border-line bg-surface;
   }
   .label-eyebrow {
-    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-subtle;
+    @apply text-xs font-medium text-subtle;
   }
   .num {
     font-variant-numeric: tabular-nums;
   }
+  /* Page-level heading used by every dashboard screen. */
+  .page-title {
+    @apply text-xl font-semibold tracking-tight text-fg;
+  }
+  /* Small inline controls keep their look but get a 44px touch target. */
+  .tap {
+    position: relative;
+  }
+  @media (pointer: coarse) {
+    .tap::after {
+      content: "";
+      position: absolute;
+      left: -6px;
+      right: -6px;
+      top: 50%;
+      height: 44px;
+      transform: translateY(-50%);
+    }
+  }
   .grid-bg {
-    background-image:
-      linear-gradient(rgb(148 163 184 / 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(148 163 184 / 0.05) 1px, transparent 1px);
-    background-size: 24px 24px;
+    background-color: var(--color-surface);
   }
 }

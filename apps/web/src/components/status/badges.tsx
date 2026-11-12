@@ -23,7 +23,7 @@ export function SourceBadge({ source, isSimulated }: { source: string | null | u
     return (
       <Tooltip content="Injected by the deterministic demo simulator — not real sensor or camera output.">
         <Badge tone="sim">
-          <FlaskConical /> SIMULATED
+          <FlaskConical /> Simulated
         </Badge>
       </Tooltip>
     );
@@ -33,32 +33,32 @@ export function SourceBadge({ source, isSimulated }: { source: string | null | u
       return (
         <Tooltip content="Produced by the KORTEX vision service from the live webcam.">
           <Badge tone="accent">
-            <Camera /> LIVE CAMERA
+            <Camera /> Live camera
           </Badge>
         </Tooltip>
       );
     case "SENSOR_LIVE":
       return (
         <Badge tone="accent">
-          <Scale /> LIVE SENSOR
+          <Scale /> Live sensor
         </Badge>
       );
     case "MANUAL":
       return (
         <Badge tone="neutral">
-          <Hand /> MANUAL
+          <Hand /> Manual
         </Badge>
       );
     case "CUSTOMER_APP":
       return (
         <Badge tone="info">
-          <Smartphone /> CUSTOMER APP
+          <Smartphone /> Customer app
         </Badge>
       );
     case "SYSTEM":
       return (
         <Badge tone="neutral">
-          <Bot /> SYSTEM
+          <Bot /> System
         </Badge>
       );
     default:
@@ -151,6 +151,35 @@ const CHECKOUT: Record<string, { tone: BadgeTone; label: string }> = {
 export function CheckoutBadge({ status }: { status: string }) {
   const c = CHECKOUT[status] ?? { tone: "neutral" as BadgeTone, label: humanize(status) };
   return <Badge tone={c.tone}>{c.label}</Badge>;
+}
+
+/** One badge that answers "what is happening with this session right now?" */
+export function SessionBadge({
+  session,
+}: {
+  session: { status: string; verification_status: string; checkout_status: string; open_discrepancies: number };
+}) {
+  const { status, verification_status, checkout_status, open_discrepancies: open } = session;
+  if (status === "EXITED") return <Badge tone="neutral">Left store</Badge>;
+  if (status === "CHECKOUT_AUTHORIZED") return <Badge tone="ok">Paid</Badge>;
+  if (status === "CANCELLED") return <Badge tone="neutral">Ended</Badge>;
+  if (checkout_status === "BLOCKED" || open > 0)
+    return (
+      <Badge tone="warn">
+        <ShieldAlert /> {open > 0 ? `${open} open alert${open === 1 ? "" : "s"}` : "Checkout blocked"}
+      </Badge>
+    );
+  if (verification_status === "VERIFYING")
+    return (
+      <Badge tone="accent">
+        <CircleDashed /> Verifying
+      </Badge>
+    );
+  return (
+    <Badge tone="info" dot>
+      Shopping
+    </Badge>
+  );
 }
 
 export function SessionStatusBadge({ status }: { status: string }) {

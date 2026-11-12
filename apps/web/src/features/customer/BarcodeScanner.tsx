@@ -231,7 +231,7 @@ export function BarcodeScanner({ onDetected, active }: { onDetected: (code: stri
               className="absolute rounded-lg border-2 border-accent/70 shadow-[0_0_0_9999px_rgb(0_0_0/0.35)]"
               style={{ left: `${BAND.x * 100}%`, top: `${BAND.y * 100}%`, width: `${BAND.w * 100}%`, height: `${BAND.h * 100}%` }}
             >
-              <div className="absolute inset-x-2 top-1/2 h-0.5 bg-accent/80 shadow-[0_0_12px_2px_rgb(34_211_238/0.6)]" />
+              <div className="absolute inset-x-2 top-1/2 h-0.5 bg-accent/80 " />
             </div>
             <p className="absolute bottom-3 left-0 right-0 text-center text-xs font-medium text-white/90 drop-shadow">
               Fill the frame with the barcode · hold steady 10–20 cm away
@@ -265,7 +265,7 @@ export function BarcodeScanner({ onDetected, active }: { onDetected: (code: stri
       </div>
       {devices.length > 1 && state === "scanning" && (
         <button
-          className="absolute right-2 top-2 grid size-9 cursor-pointer place-items-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/80"
+          className="absolute right-2 top-2 grid size-11 cursor-pointer place-items-center rounded-full bg-black/70 text-white hover:bg-black/85"
           onClick={() => setDeviceIdx((i) => ((i ?? 0) + 1) % devices.length)}
           aria-label="Switch camera"
         >

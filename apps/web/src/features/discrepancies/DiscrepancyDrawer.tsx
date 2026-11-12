@@ -61,7 +61,7 @@ function Review({ d }: { d: DiscrepancyDetail }) {
 
       <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <KV label="Session">
-          <Link to={`/sessions/${d.session_id}`} className="font-mono text-accent hover:underline">
+          <Link to={`/sessions/${d.session_id}`} className="font-mono tap text-accent hover:underline">
             {d.session_id}
           </Link>
         </KV>
@@ -96,7 +96,7 @@ function Review({ d }: { d: DiscrepancyDetail }) {
           {d.reconciliation && d.reconciliation.factors.length > 0 && (
             <button
               onClick={() => setShowFactors((v) => !v)}
-              className="cursor-pointer text-xs font-medium text-accent hover:underline"
+              className="cursor-pointer text-xs font-medium tap text-accent hover:underline"
               aria-expanded={showFactors}
             >
               {showFactors ? "Hide" : "Why this score?"}
@@ -250,8 +250,8 @@ function StaffActions({ d }: { d: DiscrepancyDetail }) {
             aria-checked={action === b.a}
             onClick={() => setAction(b.a)}
             className={
-              "flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-left text-[13px] font-medium transition-colors [&_svg]:size-4 " +
-              (action === b.a ? "border-accent/60 bg-accent/10 text-fg" : "border-line text-muted hover:border-line-strong hover:text-fg")
+              "flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-left text-[13px] font-medium transition-colors [&_svg]:size-4 " +
+              (action === b.a ? "border-fg bg-surface-2 text-fg" : "border-line text-muted hover:border-line-strong hover:text-fg")
             }
           >
             {b.icon}

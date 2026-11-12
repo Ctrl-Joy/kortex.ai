@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 /* ---------------------------------------------------------------- Skeleton */
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn("animate-pulse rounded-md bg-surface-3/70", className)} aria-hidden />;
+  return <div className={cn("animate-pulse rounded-lg bg-surface-2", className)} aria-hidden />;
 }
 
 /* ----------------------------------------------------------------- Switch */
@@ -12,12 +12,12 @@ export function Switch({ className, ...props }: React.ComponentProps<typeof RSwi
   return (
     <RSwitch.Root
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border border-line-strong bg-surface-3 transition-colors data-[state=checked]:border-accent/50 data-[state=checked]:bg-accent/30 disabled:opacity-50",
+        "tap relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full bg-line-strong transition-colors data-[state=checked]:bg-accent disabled:opacity-50",
         className,
       )}
       {...props}
     >
-      <RSwitch.Thumb className="block size-3.5 translate-x-0.5 rounded-full bg-muted transition-transform data-[state=checked]:translate-x-[18px] data-[state=checked]:bg-accent" />
+      <RSwitch.Thumb className="block size-4 translate-x-0.5 rounded-full bg-fg transition-transform data-[state=checked]:translate-x-[18px] data-[state=checked]:bg-canvas" />
     </RSwitch.Root>
   );
 }
@@ -42,7 +42,7 @@ export function TabsTrigger({ className, ...props }: React.ComponentProps<typeof
   return (
     <RTabs.Trigger
       className={cn(
-        "relative -mb-px flex shrink-0 cursor-pointer items-center gap-1.5 border-b-2 border-transparent px-3 py-2.5 text-[13px] font-medium text-muted transition-colors hover:text-fg data-[state=active]:border-accent data-[state=active]:text-fg [&_svg]:size-3.5",
+        "relative -mb-px flex shrink-0 cursor-pointer items-center gap-1.5 border-b-2 border-transparent px-3 py-2.5 pointer-coarse:py-3.5 text-[13px] font-medium text-muted transition-colors hover:text-fg data-[state=active]:border-accent data-[state=active]:text-fg [&_svg]:size-3.5",
         className,
       )}
       {...props}
@@ -92,7 +92,7 @@ export function DropdownMenuItem({ className, ...props }: React.ComponentProps<t
   return (
     <DM.Item
       className={cn(
-        "flex cursor-pointer select-none items-center gap-2 rounded-md px-2.5 py-2 text-[13px] text-fg outline-none data-[highlighted]:bg-surface-3 data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:text-muted",
+        "flex cursor-pointer select-none items-center gap-2 rounded-md px-2.5 py-2 pointer-coarse:min-h-11 text-[13px] text-fg outline-none data-[highlighted]:bg-surface-3 data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:text-muted",
         className,
       )}
       {...props}
@@ -125,9 +125,7 @@ export function EmptyState({
   return (
     <div className={cn("flex flex-col items-center justify-center px-6 py-10 text-center", className)}>
       {icon && (
-        <div className="mb-3 grid size-11 place-items-center rounded-xl border border-line bg-surface-2 text-subtle [&_svg]:size-5">
-          {icon}
-        </div>
+        <div className="mb-3 text-subtle [&_svg]:size-6">{icon}</div>
       )}
       <p className="text-sm font-medium text-fg">{title}</p>
       {description && <p className="mt-1 max-w-sm text-[13px] text-muted">{description}</p>}
@@ -140,11 +138,11 @@ export function EmptyState({
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const message = error instanceof Error ? error.message : "Something went wrong.";
   return (
-    <div role="alert" className="m-4 rounded-lg border border-bad/30 bg-bad/5 px-4 py-3 text-sm">
+    <div role="alert" className="rounded-xl border border-bad/30 bg-bad/5 px-4 py-3 text-sm">
       <p className="font-medium text-bad">Couldn’t load this data</p>
       <p className="mt-0.5 text-muted">{message}</p>
       {onRetry && (
-        <button onClick={onRetry} className="mt-2 cursor-pointer text-[13px] font-medium text-accent hover:underline">
+        <button onClick={onRetry} className="mt-2 cursor-pointer text-[13px] font-medium text-accent hover:underline pointer-coarse:min-h-11">
           Try again
         </button>
       )}

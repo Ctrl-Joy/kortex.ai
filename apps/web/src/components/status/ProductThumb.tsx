@@ -6,11 +6,11 @@ import type { Product } from "@/types/api";
 /** Product illustration (local placeholder art, not a photo of the real item). */
 export function ProductThumb({ product, className }: { product: Pick<Product, "name" | "image_url" | "accent_color">; className?: string }) {
   const [failed, setFailed] = useState(false);
-  const accent = product.accent_color ?? "#22d3ee";
+  const accent = product.accent_color ?? "#4dd4e6";
   return (
     <div
-      className={cn("relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-md border border-line", className)}
-      style={{ background: `linear-gradient(145deg, ${accent}22, #0f182a 70%)` }}
+      className={cn("relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-lg", className)}
+      style={{ background: `${accent}1f` }}
     >
       {product.image_url && !failed ? (
         <img

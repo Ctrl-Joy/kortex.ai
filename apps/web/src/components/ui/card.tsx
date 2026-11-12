@@ -21,16 +21,12 @@ export function CardHeader({
   children?: React.ReactNode;
 }) {
   return (
-    <div className={cn("flex items-start justify-between gap-3 border-b border-line px-4 py-3 sm:px-5", className)}>
+    <div className={cn("flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5", className)}>
       <div className="flex min-w-0 items-start gap-3">
-        {icon && (
-          <div className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-md border border-line bg-surface-2 text-accent [&_svg]:size-4">
-            {icon}
-          </div>
-        )}
+        {icon && <div className="mt-0.5 shrink-0 text-subtle [&_svg]:size-4">{icon}</div>}
         <div className="min-w-0">
           {title && <h2 className="text-sm font-semibold text-fg">{title}</h2>}
-          {description && <p className="mt-0.5 text-[13px] text-muted">{description}</p>}
+          {description && <p className="mt-0.5 text-[13px] text-subtle">{description}</p>}
           {children}
         </div>
       </div>

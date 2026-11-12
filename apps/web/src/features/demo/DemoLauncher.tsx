@@ -36,14 +36,14 @@ export function DemoLauncher({ compact = false }: { compact?: boolean }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="primary" size={compact ? "icon-sm" : "sm"} aria-label="Start demo">
+        <Button variant="primary" size="sm" aria-label="Run a demo scenario" className={compact ? "px-2.5" : "max-sm:w-11 max-sm:px-0"}>
           <Play />
-          {!compact && "Start Demo"}
+          {!compact && <span className="max-sm:hidden">Run demo</span>}
         </Button>
       </DialogTrigger>
       <DialogContent
-        title="Start a jury demo scenario"
-        description="Each scenario creates a NEW demo session and runs through the real API, database and reconciliation engine. Existing data is never reset."
+        title="Run a demo scenario"
+        description="Each run creates a new demo session and goes through the real API and reconciliation engine. Existing data is untouched."
         className="max-w-2xl"
       >
         <div className="space-y-4 p-5">
@@ -59,14 +59,14 @@ export function DemoLauncher({ compact = false }: { compact?: boolean }) {
                 className={cn(
                   "flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors",
                   scenario === s.code
-                    ? "border-accent/60 bg-accent/5 shadow-[var(--shadow-glow)]"
+                    ? "border-fg bg-surface-2"
                     : "border-line hover:border-line-strong hover:bg-surface-2",
                 )}
               >
                 <span
                   className={cn(
                     "mt-0.5 grid size-6 shrink-0 place-items-center rounded-md font-mono text-xs font-bold",
-                    scenario === s.code ? "bg-accent text-[#04121a]" : "bg-surface-3 text-muted",
+                    scenario === s.code ? "bg-fg text-canvas" : "bg-surface-3 text-muted",
                   )}
                 >
                   {s.code}
@@ -95,7 +95,7 @@ export function DemoLauncher({ compact = false }: { compact?: boolean }) {
             </div>
           </div>
           <p className="flex items-center gap-2 text-xs text-sim">
-            <FlaskConical className="size-3.5" /> All injected scans, camera and sensor events are labelled SIMULATED.
+            <FlaskConical className="size-3.5 shrink-0" /> Everything a scenario injects is labelled Simulated.
           </p>
         </div>
         <DialogFooter>

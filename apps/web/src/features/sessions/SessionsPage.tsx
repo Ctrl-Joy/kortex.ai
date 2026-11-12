@@ -1,7 +1,7 @@
 import { ChevronRight, Search, ShoppingCart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { CheckoutBadge, SessionStatusBadge, VerificationBadge } from "@/components/status/badges";
+import { SessionBadge } from "@/components/status/badges";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input, NativeSelect } from "@/components/ui/form";
@@ -53,8 +53,8 @@ export default function SessionsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[220px] flex-1 sm:max-w-xs">
+      <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
+        <div className="relative col-span-2 sm:min-w-[220px] sm:max-w-xs sm:flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle" />
           <Input
             value={search}
@@ -64,19 +64,19 @@ export default function SessionsPage() {
             aria-label="Search sessions"
           />
         </div>
-        <NativeSelect aria-label="Status" value={status} onChange={(e) => set({ status: e.target.value })} className="w-auto">
+        <NativeSelect aria-label="Status" value={status} onChange={(e) => set({ status: e.target.value })} className="sm:w-auto">
           <option value="">All statuses</option>
           <option value="ACTIVE">Active</option>
           <option value="CHECKOUT_AUTHORIZED">Checkout authorized</option>
           <option value="EXITED">Exited</option>
           <option value="CANCELLED">Cancelled</option>
         </NativeSelect>
-        <NativeSelect aria-label="Data origin" value={demo} onChange={(e) => set({ demo: e.target.value })} className="w-auto">
+        <NativeSelect aria-label="Data origin" value={demo} onChange={(e) => set({ demo: e.target.value })} className="sm:w-auto">
           <option value="">Demo + real</option>
           <option value="0">Real sessions only</option>
           <option value="1">Demo / seeded only</option>
         </NativeSelect>
-        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-line px-3 py-1.5 text-[13px] text-muted">
+        <label className="col-span-2 flex min-h-11 cursor-pointer items-center gap-2 px-1 text-[13px] text-muted sm:min-h-0">
           <Switch checked={attention} onCheckedChange={(c) => set({ attention: c ? "1" : null })} aria-label="Needs attention only" />
           Needs attention
         </label>
@@ -101,12 +101,9 @@ export default function SessionsPage() {
                   <TR>
                     <TH>Session</TH>
                     <TH>Started</TH>
-                    <TH>Status</TH>
                     <TH className="text-right">Scans</TH>
                     <TH className="text-right">Cart total</TH>
-                    <TH className="text-right">Open</TH>
-                    <TH>Verification</TH>
-                    <TH>Checkout</TH>
+                    <TH>Status</TH>
                     <TH className="w-8" />
                   </TR>
                 </THead>
@@ -119,26 +116,17 @@ export default function SessionsPage() {
                         </Link>
                         <p className="flex items-center gap-1.5 text-xs text-subtle">
                           {s.customer_label}
-                          {s.is_demo && <Badge tone="sim">DEMO{s.scenario_code ? ` ${s.scenario_code}` : ""}</Badge>}
+                          {s.is_demo && <Badge tone="sim">Demo{s.scenario_code ? ` ${s.scenario_code}` : ""}</Badge>}
                         </p>
                       </TD>
                       <TD>
                         <p className="text-[13px]">{formatDateTime(s.started_at)}</p>
                         <p className="text-xs text-subtle">{relativeTime(s.started_at)}</p>
                       </TD>
-                      <TD>
-                        <SessionStatusBadge status={s.status} />
-                      </TD>
                       <TD className="num text-right">{s.scan_count}</TD>
                       <TD className="num text-right font-medium">{formatINR(s.subtotal_paise)}</TD>
-                      <TD className="num text-right">
-                        {s.open_discrepancies > 0 ? <span className="font-semibold text-warn">{s.open_discrepancies}</span> : <span className="text-subtle">0</span>}
-                      </TD>
                       <TD>
-                        <VerificationBadge status={s.verification_status} />
-                      </TD>
-                      <TD>
-                        <CheckoutBadge status={s.checkout_status} />
+                        <SessionBadge session={s} />
                       </TD>
                       <TD>
                         <ChevronRight className="size-4 text-subtle" />
@@ -151,7 +139,7 @@ export default function SessionsPage() {
             <ul className="divide-y divide-line lg:hidden">
               {q.data.items.map((s) => (
                 <li key={s.id}>
-                  <Link to={`/sessions/${s.id}`} className="block px-4 py-3 hover:bg-surface-2/60">
+                  <Link to={`/sessions/${s.id}`} className="block px-4 py-3.5 hover:bg-surface-2/60">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-mono text-[13px]">{s.id}</span>
                       <span className="num text-[13px] font-semibold">{formatINR(s.subtotal_paise)}</span>
@@ -160,11 +148,8 @@ export default function SessionsPage() {
                       {s.customer_label} · {relativeTime(s.started_at)} · {s.scan_count} scans
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      <SessionStatusBadge status={s.status} />
-                      <VerificationBadge status={s.verification_status} />
-                      <CheckoutBadge status={s.checkout_status} />
-                      {s.open_discrepancies > 0 && <Badge tone="warn">{s.open_discrepancies} open</Badge>}
-                      {s.is_demo && <Badge tone="sim">DEMO</Badge>}
+                      <SessionBadge session={s} />
+                      {s.is_demo && <Badge tone="sim">Demo</Badge>}
                     </div>
                   </Link>
                 </li>

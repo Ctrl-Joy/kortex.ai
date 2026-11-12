@@ -63,13 +63,13 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[220px] flex-1 sm:max-w-xs">
+      <div className="flex items-center gap-2">
+        <div className="relative min-w-0 flex-1 sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, SKU, barcode" className="pl-9" aria-label="Search products" />
         </div>
-        <Button variant="primary" className="ml-auto" onClick={() => setEditing("new")}>
-          <Plus /> Add product
+        <Button variant="primary" className="ml-auto shrink-0" onClick={() => setEditing("new")} aria-label="Add product">
+          <Plus /> <span className="max-sm:hidden">Add product</span>
         </Button>
       </div>
 
@@ -85,6 +85,28 @@ export default function ProductsPage() {
         ) : q.data.items.length === 0 ? (
           <EmptyState icon={<Package />} title="No products found" action={<Button onClick={() => setEditing("new")}>Add product</Button>} />
         ) : (
+          <>
+          <ul className="divide-y divide-line md:hidden">
+            {q.data.items.map((p) => (
+              <li key={p.id} className={`flex items-center gap-3 px-4 py-3 ${p.active ? "" : "opacity-60"}`}>
+                <ProductThumb product={p} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-fg">{p.name}</p>
+                  <p className="num truncate text-xs text-subtle">
+                    {formatINR(p.price_paise)} · <span className="font-mono">{p.barcode}</span>
+                    {!p.active && " · inactive"}
+                  </p>
+                </div>
+                <Button size="icon-sm" variant="ghost" aria-label={`Edit ${p.name}`} onClick={() => setEditing(p)}>
+                  <Pencil />
+                </Button>
+                <Button size="icon-sm" variant="ghost" aria-label={`Delete ${p.name}`} onClick={() => setDeleting(p)}>
+                  <Trash2 />
+                </Button>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block">
           <Table>
             <THead>
               <TR>
@@ -92,7 +114,7 @@ export default function ProductsPage() {
                 <TH>SKU / barcode</TH>
                 <TH>Category</TH>
                 <TH className="text-right">Price</TH>
-                <TH>Model class</TH>
+                <TH>Camera class</TH>
                 <TH>Status</TH>
                 <TH className="text-right">Actions</TH>
               </TR>
@@ -121,7 +143,7 @@ export default function ProductsPage() {
                         <Badge tone="accent">{p.model_class}</Badge>
                       </Tooltip>
                     ) : (
-                      <span className="text-xs text-subtle">SKU model / simulation only</span>
+                      <span className="text-xs text-subtle">None</span>
                     )}
                   </TD>
                   <TD>{p.active ? <Badge tone="ok">Active</Badge> : <Badge tone="neutral">Inactive</Badge>}</TD>
@@ -139,11 +161,11 @@ export default function ProductsPage() {
               ))}
             </TBody>
           </Table>
+          </div>
+          </>
         )}
       </Card>
-      <p className="text-xs text-subtle">
-        Product art is illustrative placeholder artwork, not photographs of the actual items. Prices are authoritative: every bill is recalculated from this catalogue.
-      </p>
+      <p className="text-xs text-subtle">Every bill is recalculated from these prices. Product pictures are placeholder illustrations.</p>
 
       {editing && <ProductDialog product={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
       {deleting && <DeleteDialog product={deleting} onClose={() => setDeleting(null)} />}
@@ -234,7 +256,7 @@ function ProductDialog({ product, onClose }: { product: Product | null; onClose:
             <Field label="Image" htmlFor="image_url" error={errors.image_url} hint="Optional local path, e.g. /products/cola.svg" className="sm:col-span-2">
               <Input {...bind("image_url")} />
             </Field>
-            <label className="flex items-center gap-3 sm:col-span-2">
+            <label className="flex min-h-11 items-center gap-3 sm:col-span-2">
               <Switch checked={form.active} onCheckedChange={(c) => setForm((f) => ({ ...f, active: c }))} />
               <span className="text-[13px]">Active (available to shoppers)</span>
             </label>

@@ -5,27 +5,26 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer select-none",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-colors duration-150 disabled:pointer-events-none disabled:opacity-45 [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer select-none",
   {
     variants: {
       variant: {
-        primary:
-          "bg-accent text-[#04121a] font-semibold hover:bg-[#5ee3f5] shadow-[0_0_0_1px_rgb(34_211_238/0.4),0_6px_20px_-8px_rgb(34_211_238/0.6)]",
-        secondary: "bg-surface-3 text-fg border border-line-strong hover:bg-[#1c2944] hover:border-[#355078]",
-        outline: "border border-line-strong text-fg hover:bg-surface-2 hover:border-[#355078]",
+        primary: "bg-fg text-canvas font-semibold hover:bg-white",
+        secondary: "bg-surface-3 text-fg hover:bg-line-strong",
+        outline: "border border-line-strong text-fg hover:bg-surface-2",
         ghost: "text-muted hover:text-fg hover:bg-surface-2",
-        danger: "bg-bad/15 text-bad border border-bad/30 hover:bg-bad/25",
-        success: "bg-ok/15 text-ok border border-ok/30 hover:bg-ok/25",
-        warning: "bg-warn/15 text-warn border border-warn/30 hover:bg-warn/25",
+        danger: "bg-bad/12 text-bad hover:bg-bad/20",
+        success: "bg-ok/12 text-ok hover:bg-ok/20",
+        warning: "bg-warn/12 text-warn hover:bg-warn/20",
         link: "text-accent underline-offset-4 hover:underline px-0 h-auto",
       },
       size: {
-        sm: "h-8 px-3 text-[13px]",
-        md: "h-9 px-4",
+        sm: "h-8 px-3 text-[13px] pointer-coarse:h-11",
+        md: "h-9 px-4 pointer-coarse:h-11",
         lg: "h-11 px-5 text-[15px]",
-        xl: "h-14 px-6 text-base rounded-lg",
-        icon: "h-9 w-9",
-        "icon-sm": "h-8 w-8",
+        xl: "h-14 px-6 text-base rounded-xl",
+        icon: "h-9 w-9 pointer-coarse:h-11 pointer-coarse:w-11",
+        "icon-sm": "h-8 w-8 pointer-coarse:h-11 pointer-coarse:w-11",
       },
     },
     defaultVariants: { variant: "secondary", size: "md" },

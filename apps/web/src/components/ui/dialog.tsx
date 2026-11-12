@@ -22,13 +22,13 @@ export function DialogContent({
   const isSheet = side === "right";
   return (
     <D.Portal>
-      <D.Overlay className="fixed inset-0 z-50 bg-[#02050b]/70 backdrop-blur-[2px] data-[state=open]:animate-fade-in" />
+      <D.Overlay className="fixed inset-0 z-50 bg-black/60 data-[state=open]:animate-fade-in" />
       <D.Content
         className={cn(
           "fixed z-50 flex flex-col border border-line-strong bg-surface shadow-[var(--shadow-pop)] focus:outline-none",
           isSheet
-            ? "inset-y-0 right-0 h-full w-full max-w-xl border-y-0 border-r-0 data-[state=open]:animate-slide-up"
-            : "left-1/2 top-1/2 max-h-[90vh] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl data-[state=open]:animate-slide-up",
+            ? "inset-y-0 right-0 h-dvh w-full max-w-xl border-y-0 border-r-0 max-sm:border-l-0 data-[state=open]:animate-fade-in"
+            : "left-1/2 top-1/2 max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl data-[state=open]:animate-fade-in",
           className,
         )}
         {...props}
@@ -42,7 +42,7 @@ export function DialogContent({
               <D.Description className="sr-only">{typeof title === "string" ? title : "Dialog"}</D.Description>
             )}
           </div>
-          <D.Close className="-mr-1 rounded-md p-1.5 text-muted hover:bg-surface-2 hover:text-fg" aria-label="Close">
+          <D.Close className="-mr-1 grid size-8 shrink-0 place-items-center rounded-lg text-muted hover:bg-surface-2 hover:text-fg pointer-coarse:size-11" aria-label="Close">
             <X className="size-4" />
           </D.Close>
         </div>
@@ -55,7 +55,7 @@ export function DialogContent({
 export function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("flex flex-col-reverse gap-2 border-t border-line px-5 py-3 sm:flex-row sm:justify-end", className)}
+      className={cn("flex flex-col-reverse gap-2 border-t border-line px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:justify-end", className)}
       {...props}
     />
   );

@@ -270,6 +270,17 @@ export interface CustomerState {
   discrepancies: Discrepancy[];
   recent_scans: ScanEvent[];
   checkout: CheckoutRecord | null;
+  /** True on servers without a camera: the app offers a labelled simulated shelf. */
+  simulated_shelf?: boolean;
+  pending_pickups?: PendingPickup[];
+}
+
+export interface PendingPickup {
+  id: string;
+  product_id: string | null;
+  product_name: string | null;
+  is_simulated: boolean;
+  finalize_after: string | null;
 }
 
 export interface SessionDetail {
@@ -315,6 +326,7 @@ export interface ScanResponse {
 
 export interface VisionStatus {
   online: boolean;
+  simulated_shelf?: boolean;
   last_seen_at: string | null;
   message: string | null;
   status: {
@@ -335,7 +347,7 @@ export interface Health {
   api: { ok: boolean; version: string };
   database: { ok: boolean; error: string | null };
   websocket: { ok: boolean };
-  vision: { online: boolean };
+  vision: { online: boolean; simulated_shelf?: boolean };
   time: string;
 }
 

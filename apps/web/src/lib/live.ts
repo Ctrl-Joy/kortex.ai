@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import { API_BASE } from "@/lib/api";
 import type { LiveMessage } from "@/types/api";
 
 /**
@@ -14,7 +15,7 @@ export type LiveStatus = "connecting" | "open" | "closed";
 type Listener = (msg: LiveMessage) => void;
 
 function wsUrl(query: string): string {
-  const base = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "");
+  const base = API_BASE;
   if (base) return `${base.replace(/^http/, "ws")}/ws?${query}`;
   const proto = window.location.protocol === "https:" ? "wss" : "ws";
   return `${proto}://${window.location.host}/ws?${query}`;

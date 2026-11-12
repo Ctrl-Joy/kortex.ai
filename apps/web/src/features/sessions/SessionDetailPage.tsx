@@ -68,12 +68,12 @@ export default function SessionDetailPage() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-3">
-        <Link to="/sessions" className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg">
+        <Link to="/sessions" className="tap inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg">
           <ArrowLeft className="size-4" /> Sessions
         </Link>
         <span className="text-subtle">/</span>
         <span className="font-mono text-[13px] text-fg">{id}</span>
-        {d?.session.is_demo && <Badge tone="sim">DEMO{d.session.scenario_code ? ` · scenario ${d.session.scenario_code}` : ""}</Badge>}
+        {d?.session.is_demo && <Badge tone="sim">Demo{d.session.scenario_code ? ` · scenario ${d.session.scenario_code}` : ""}</Badge>}
         <div className="ml-auto flex gap-2">
           {d && d.verification.pending_observations > 0 && d.session.status === "ACTIVE" && (
             <Button size="sm" variant="outline" loading={force.isPending} onClick={() => force.mutate()}>
@@ -519,7 +519,7 @@ function AuditTab({ id }: { id: string }) {
             />
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[13px] text-fg">{a.summary}</span>
-              {a.is_simulated && <Badge tone="sim">SIMULATED</Badge>}
+              {a.is_simulated && <Badge tone="sim">Simulated</Badge>}
             </div>
             <p className="text-xs text-subtle">
               {formatDateTime(a.occurred_at)} · {humanize(a.event_type)} · {humanize(a.actor_type)} {a.actor_id ?? ""}

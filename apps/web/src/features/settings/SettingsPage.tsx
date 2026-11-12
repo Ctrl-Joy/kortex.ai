@@ -33,19 +33,20 @@ export default function SettingsPage() {
 
 function HealthTile({ icon, label, ok, warn, value, detail }: { icon: React.ReactNode; label: string; ok: boolean; warn?: boolean; value: string; detail?: string }) {
   const tone = warn ? "text-warn" : ok ? "text-ok" : "text-bad";
-  const word = warn ? "Off" : ok ? "Healthy" : "Unavailable";
+  const word = warn ? "Off" : ok ? "OK" : "Down";
   return (
-    <div className="card p-4">
-      <div className="flex items-center justify-between">
-        <span className="grid size-8 place-items-center rounded-md border border-line bg-surface-2 text-muted [&_svg]:size-4">{icon}</span>
-        <span className={cn("flex items-center gap-1.5 text-xs font-semibold", tone)}>
-          <span className={cn("size-2 rounded-full", warn ? "bg-warn" : ok ? "bg-ok" : "bg-bad")} />
-          {word}
-        </span>
+    <div className="flex items-center gap-3 px-4 py-3">
+      <span className="shrink-0 text-subtle [&_svg]:size-4">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-medium text-fg">
+          {label} <span className="font-normal text-muted">· {value}</span>
+        </p>
+        {detail && <p className="truncate text-xs text-subtle">{detail}</p>}
       </div>
-      <p className="mt-3 text-[13px] text-muted">{label}</p>
-      <p className="text-sm font-semibold text-fg">{value}</p>
-      {detail && <p className="mt-0.5 truncate text-xs text-subtle">{detail}</p>}
+      <span className={cn("flex shrink-0 items-center gap-1.5 text-xs font-medium", tone)}>
+        <span className={cn("size-1.5 rounded-full", warn ? "bg-warn" : ok ? "bg-ok" : "bg-bad")} />
+        {word}
+      </span>
     </div>
   );
 }
@@ -56,31 +57,24 @@ function HealthGrid() {
   if (h.isError) return <ErrorState error={h.error} onRetry={() => h.refetch()} />;
   if (!h.data)
     return (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-32" />
-        ))}
-      </div>
+      <Skeleton className="h-52" />
     );
   const d = h.data;
   return (
-    <section aria-label="System health" className="space-y-3">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <HealthTile icon={<Server />} label="API" ok={d.api.ok} value={`v${d.api.version}`} detail={`Server time ${formatDateTime(d.time)}`} />
-        <HealthTile icon={<Database />} label="Database" ok={d.database.ok} value="SQLite" detail={d.database.error ?? "Persistent local file"} />
-        <HealthTile icon={<Wifi />} label="WebSocket" ok={status === "open"} warn={status === "connecting"} value={humanize(status)} detail="Real-time event stream" />
+    <section aria-label="System health">
+      <div className="card grid divide-y divide-line sm:grid-cols-2 sm:divide-y-0">
+        <HealthTile icon={<Server />} label="API" ok={d.api.ok} value={`v${d.api.version}`} detail={formatDateTime(d.time)} />
+        <HealthTile icon={<Database />} label="Database" ok={d.database.ok} value="SQLite" detail={d.database.error ?? undefined} />
+        <HealthTile icon={<Wifi />} label="WebSocket" ok={status === "open"} warn={status === "connecting"} value={humanize(status)} detail="Live updates" />
         <HealthTile
           icon={<Cpu />}
           label="Vision service"
           ok={d.vision.online}
           warn={!d.vision.online}
-          value={d.vision.online ? "Online" : "Not running"}
-          detail={d.vision.online ? "Heartbeat active" : "Start services/vision to enable"}
+          value={d.vision.online ? "Camera connected" : d.vision.simulated_shelf ? "Simulated shelf" : "Not running"}
+          detail={d.vision.online ? undefined : d.vision.simulated_shelf ? "No camera on this server" : "Start services/vision to use a webcam"}
         />
       </div>
-      <p className="flex items-center gap-2 text-xs text-muted">
-        <FlaskConical className="size-3.5 text-sim" /> Simulation is always available and every simulated event is labelled.
-      </p>
     </section>
   );
 }
@@ -185,7 +179,7 @@ function PolicyCard() {
                 <button
                   key={g.title}
                   onClick={() => setShowAdvanced(true)}
-                  className="cursor-pointer text-[13px] font-medium text-accent hover:underline"
+                  className="cursor-pointer text-[13px] font-medium tap text-accent hover:underline"
                 >
                   Show advanced settings ({g.keys.length})
                 </button>
@@ -264,7 +258,7 @@ function StoreCard() {
                 <p className="text-xs text-subtle">{z.label}</p>
               </div>
               {z.session_id ? (
-                <Link to={`/sessions/${z.session_id}`} className="font-mono text-xs text-accent hover:underline">
+                <Link to={`/sessions/${z.session_id}`} className="font-mono text-xs tap text-accent hover:underline">
                   {z.session_id}
                 </Link>
               ) : (

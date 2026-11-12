@@ -43,7 +43,7 @@ export default function AuditPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap [&>*:first-child]:col-span-2 [&_select]:w-full sm:[&_select]:w-auto">
         <div className="relative min-w-[220px] flex-1 sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search summary or entity ID" className="pl-9" aria-label="Search audit" />
@@ -104,7 +104,7 @@ export default function AuditPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-[13px] text-fg">{a.summary}</span>
-                          {a.is_simulated && <Badge tone="sim">SIMULATED</Badge>}
+                          {a.is_simulated && <Badge tone="sim">Simulated</Badge>}
                         </div>
                         <p className="mt-0.5 text-xs text-subtle">
                           <span className="num">{formatDateTime(a.occurred_at)}</span> · {humanize(a.event_type)} · {humanize(a.actor_type)}
@@ -112,7 +112,7 @@ export default function AuditPage() {
                           {a.session_id && (
                             <>
                               {" · "}
-                              <Link to={`/sessions/${a.session_id}`} className="font-mono text-accent hover:underline" onClick={(e) => e.stopPropagation()}>
+                              <Link to={`/sessions/${a.session_id}`} className="font-mono tap text-accent hover:underline" onClick={(e) => e.stopPropagation()}>
                                 {a.session_id}
                               </Link>
                             </>

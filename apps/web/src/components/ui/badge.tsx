@@ -3,21 +3,21 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[11px] font-semibold leading-none tracking-wide whitespace-nowrap [&_svg]:size-3",
+  "inline-flex items-center gap-1 rounded-full px-2 py-[3px] text-[11px] font-medium leading-none whitespace-nowrap [&_svg]:size-3",
   {
     variants: {
       tone: {
-        neutral: "border-line-strong bg-surface-2 text-muted",
-        accent: "border-accent/30 bg-accent/10 text-accent",
-        ok: "border-ok/30 bg-ok/10 text-ok",
-        warn: "border-warn/30 bg-warn/10 text-warn",
-        bad: "border-bad/30 bg-bad/10 text-bad",
-        info: "border-info/30 bg-info/10 text-info",
-        sim: "border-sim/40 bg-sim/10 text-sim",
+        neutral: "bg-surface-3 text-muted",
+        accent: "bg-accent/12 text-accent",
+        ok: "bg-ok/12 text-ok",
+        warn: "bg-warn/12 text-warn",
+        bad: "bg-bad/12 text-bad",
+        info: "bg-surface-3 text-fg",
+        sim: "bg-sim/14 text-sim",
       },
       size: {
         sm: "",
-        md: "px-2 py-1 text-xs",
+        md: "px-2.5 py-1 text-xs",
       },
     },
     defaultVariants: { tone: "neutral", size: "sm" },

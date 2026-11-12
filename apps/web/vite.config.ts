@@ -37,7 +37,6 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (id.includes("recharts") || id.includes("d3-")) return "charts";
             if (id.includes("@zxing")) return "scanner";
           },
         },
