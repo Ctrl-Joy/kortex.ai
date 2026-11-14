@@ -1,0 +1,72 @@
+<!doctype html>
+<!-- Source for public/og-image.png (1200x630). Not part of the app bundle.
+     Render: chrome --headless=new --screenshot=og-image.png --window-size=1200,630
+             --hide-scrollbars --force-device-scale-factor=1 file:///.../card.html -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face {
+    font-family: "Inter Variable";
+    src: url("../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2") format("woff2");
+    font-weight: 100 900;
+  }
+  @font-face {
+    font-family: "JetBrains Mono Variable";
+    src: url("../../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2") format("woff2");
+    font-weight: 100 800;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    background: #0b0c0e;
+    color: #ececee;
+    font-family: "Inter Variable", system-ui, sans-serif;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+  }
+  .frame {
+    position: absolute; inset: 40px;
+    border: 1px solid #23252a; border-radius: 16px;
+    padding: 64px 72px;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .brand { display: flex; align-items: center; gap: 20px; }
+  .brand svg { width: 64px; height: 64px; }
+  .word { font-size: 30px; font-weight: 600; letter-spacing: 0.08em; }
+  h1 {
+    font-size: 76px; font-weight: 600; line-height: 1.04; letter-spacing: -0.025em;
+    max-width: 820px;
+  }
+  h1 em { font-style: normal; color: #4dd4e6; }
+  .foot { display: flex; align-items: center; justify-content: space-between; }
+  .sub { font-size: 24px; color: #a3a6ad; line-height: 1.4; max-width: 640px; }
+  .tag {
+    font-family: "JetBrains Mono Variable", monospace; font-size: 17px; letter-spacing: 0.06em;
+    color: #4ade80; display: flex; align-items: center; gap: 10px;
+    border: 1px solid #23252a; border-radius: 999px; padding: 10px 18px; background: #111214;
+  }
+  .tag i { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; display: block; }
+  /* Large scan bracket echoing the mark, top right */
+  .bracket { position: absolute; right: 108px; top: 104px; width: 150px; height: 150px; }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#ececee"/><path d="M9 13V10.5A1.5 1.5 0 0 1 10.5 9H13M19 9h2.5A1.5 1.5 0 0 1 23 10.5V13M23 19v2.5a1.5 1.5 0 0 1-1.5 1.5H19M13 23h-2.5A1.5 1.5 0 0 1 9 21.5V19" stroke="#0b0c0e" stroke-width="2" stroke-linecap="round"/><path d="m12.6 16.2 2.4 2.4 4.6-4.9" stroke="#1597ab" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="word">KORTEX</span>
+    </div>
+    <h1>Scan-and-go checkout that <em>checks itself.</em></h1>
+    <div class="foot">
+      <p class="sub">Shoppers scan as they pick. The store verifies, and honest mistakes get fixed in one tap.</p>
+      <span class="tag"><i></i>VERIFIED</span>
+    </div>
+  </div>
+  <svg class="bracket" viewBox="0 0 32 32" fill="none">
+    <path d="M9 13V10.5A1.5 1.5 0 0 1 10.5 9H13M19 9h2.5A1.5 1.5 0 0 1 23 10.5V13M23 19v2.5a1.5 1.5 0 0 1-1.5 1.5H19M13 23h-2.5A1.5 1.5 0 0 1 9 21.5V19" stroke="#33363d" stroke-width="0.6" stroke-linecap="round"/>
+    <path d="m12.6 16.2 2.4 2.4 4.6-4.9" stroke="#4dd4e6" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</body>
+</html>
