@@ -4,7 +4,7 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/((?!assets/|products/|kortex-mark.svg|og-image.png|robots.txt|sitemap.xml).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/((?!assets/|products/|kortex-mark.svg|og-image.png|robots.txt|sitemap.xml|googlecdece1be7d6f6325.html).*)", "destination": "/index.html" }],
   "headers": [
     {
       "source": "/assets/(.*)",
