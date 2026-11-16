@@ -1,2 +1,11 @@
 User-agent: *
 Allow: /
+Disallow: /overview
+Disallow: /live
+Disallow: /sessions
+Disallow: /discrepancies
+Disallow: /products$
+Disallow: /audit
+Disallow: /settings
+
+Sitemap: https://kortex-ai-one.vercel.app/sitemap.xml
